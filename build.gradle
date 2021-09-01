@@ -1,5 +1,12 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm' version '1.5.30'
+    id 'org.openjfx.javafxplugin' version "0.0.8"
+    id 'application'
+}
+
+javafx {
+    version = '11.0.2'
+    modules = ['javafx.controls']
 }
 
 group 'com.github.nkb03'
@@ -9,6 +16,9 @@ repositories {
     mavenCentral()
 }
 
+mainClassName = 'wittgenstein.gui.App'
+
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib"
+    compile 'org.jetbrains.kotlin:kotlin-stdlib'
+    compile 'org.controlsfx:controlsfx:11.1.0'
 }

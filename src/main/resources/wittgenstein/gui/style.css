@@ -1,0 +1,7 @@
+.action-icon {
+    -fx-background-color: transparent;
+}
+
+.action-icon:hover {
+    -fx-background-color: inherit;
+}
