@@ -1,29 +1,37 @@
 package wittgenstein.gui
 
-import javafx.beans.binding.Binding
-import javafx.beans.binding.Bindings
-import javafx.geometry.Insets
+import javafx.beans.value.ObservableValue
 import javafx.scene.Node
 import javafx.scene.control.ToggleButton
+import javafx.scene.control.ToggleGroup
 import javafx.scene.control.Tooltip
+import javafx.scene.layout.HBox
 import org.controlsfx.control.SegmentedButton
 
-abstract class SelectorBar<T : Any>(options: List<T>) : SegmentedButton() {
+abstract class SelectorBar<T>(vararg options: List<T>): HBox(10.0) {
     protected open fun extractGraphic(option: T): Node? = null
     protected open fun extractText(option: T): String? = null
     protected open fun extractDescription(option: T): String? = null
     protected open fun ToggleButton.extraConfig(option: T) {}
 
     private val map = mutableMapOf<T, ToggleButton>()
-
-    fun select(option: T) {
-        val btn = map.getValue(option)
-        btn.isSelected = true
-        btn.requestFocus()
-    }
+    val toggleGroup = ToggleGroup()
 
     init {
-        for (option in options) {
+        for (group in options) {
+            val seg = createSegment(group)
+            seg.toggleGroup = toggleGroup
+            children.add(seg)
+        }
+        select(options[0][0])
+        toggleGroup.dontDeselectAll()
+    }
+
+    val selected: ObservableValue<T> = toggleGroup.selectedToggleProperty().map { it?.userData } as ObservableValue<T>
+
+    private fun createSegment(group: List<T>): SegmentedButton {
+        val seg = SegmentedButton()
+        for (option in group) {
             val btn = ToggleButton(this.extractText(option), this.extractGraphic(option))
             map[option] = btn
             btn.userData = option
@@ -31,17 +39,17 @@ abstract class SelectorBar<T : Any>(options: List<T>) : SegmentedButton() {
             btn.prefHeight = 30.0
             @Suppress("LeakingThis")
             btn.extraConfig(option)
-            buttons.add(btn)
+            seg.buttons.add(btn)
         }
-        buttons[0].isSelected = true
-        toggleGroup.dontDeselectAll()
-        styleClass.add(STYLE_CLASS_DARK)
+        seg.styleClass.add("dark")
+        return seg
     }
 
-    val selected: Binding<T> = Bindings.createObjectBinding({
-        @Suppress("UNCHECKED_CAST")
-        toggleGroup.selectedToggle?.userData as T? ?: options[0]
-    }, toggleGroup.selectedToggleProperty())
+    fun select(option: T) {
+        val btn = map.getValue(option)
+        btn.isSelected = true
+        btn.requestFocus()
+    }
 
     fun receiveFocus() {
         val btn = toggleGroup.selectedToggle as ToggleButton

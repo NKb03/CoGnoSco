@@ -17,7 +17,6 @@ class ActionsBar : HBox(5.0) {
             val glyph = FontAwesome().create(action.glyph)
                 .sizeFactor(2)
             val btn = Button(null, glyph)
-//            btn.isFocusTraversable = false
             btn.styleClass.add("action-icon")
             btn.tooltip = Tooltip(action.description)
             btn.setOnAction {

@@ -44,7 +44,7 @@ class App : Application() {
         )
         Shortcuts.listen(layout) { shortcut ->
             when (shortcut) {
-                ESCAPE -> typeSelector.selectPointer()
+                ESCAPE -> typeSelector.select(ElementTypeSelector.POINTER)
                 SELECT_TYPE -> typeSelector.receiveFocus()
                 SELECT_INSTRUMENT -> instrumentSelector.receiveFocus()
                 LOUDER -> {

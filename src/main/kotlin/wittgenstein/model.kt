@@ -89,7 +89,10 @@ interface Element {
     var start: Moment?
     var startDynamic: Dynamic?
 
-    sealed interface Type
+    sealed interface Type {
+        val abbreviation: String
+        val description: String
+    }
 }
 
 interface PitchedElement : Element {
@@ -120,36 +123,40 @@ open class PitchedContinuousElement(
     override val type: Type,
     override var pitch: Pitch,
 ) : ContinuousElement(), PitchedElement {
-    sealed interface Type : PitchedElement.Type, ContinuousElement.Type
+    sealed class Type(
+        override val abbreviation: String,
+        override val description: String
+    ) : PitchedElement.Type, ContinuousElement.Type
 
-    object Regular : Type
-    object FlutterTongue : Type
-    object Tremolo : Type
-    object Repeat : Type
-    object Noisy : Type
+    object Regular : Type("reg", "durchgehaltener Ton")
+    object FlutterTongue : Type("f.t.", "Flatterzunge (Bläser)")
+    object Tremolo : Type("trm", "Tremolo (Streicher)")
+    object Repeat : Type("rep", "Tonwiederholung")
+    object ColLegnoTratto : Type("c.l.t.", "col legno tratto (Streicher)")
+    object Noisy: Type("noisy", "geräuschhaft (bei Bläsern mit viel Luft)")
 }
 
 class Trill(pitch: Pitch, val secondaryPitch: Pitch) : PitchedContinuousElement(Trill, pitch) {
-    companion object : Type
+    companion object : Type("tr", "Triller")
 }
 
 open class ContinuousNoise(override val type: Type) : ContinuousElement() {
-    sealed interface Type : ContinuousElement.Type
+    sealed class Type(override val abbreviation: String, override val description: String) : ContinuousElement.Type
 
-    object DrumRoll : Type
-    object Breath : Type
+    object DrumRoll : Type("d.r.", "Trommelwirbel (Bass Drum, Snare, Pauke, Becken)")
+    object Breath : Type("br.", "Atem (ganzes Orchester)")
 }
 
 class DiscretePitchedElement(override val type: Type, override var pitch: Pitch) : AbstractElement(), PitchedElement {
-    sealed interface Type : PitchedElement.Type
+    sealed class Type(override val abbreviation: String, override val description: String) : PitchedElement.Type
 
-    object Pizzicato : Type
-    object Staccato : Type
-    object Noisy : Type
+    object Pizzicato : Type("pizz.", "Pizzicato (Streicher)")
+    object Staccato : Type("stacc.", "Staccato")
+    object Slap : Type("s.t.", "Slap Tongue")
 }
 
 class DiscreteNoise(override val type: Type) : AbstractElement() {
-    sealed interface Type : Element.Type
+    sealed class Type(override val abbreviation: String, override val description: String) : Element.Type
 
-    object Bang : Type
+    object Bang : Type("bang", "Schlag")
 }
