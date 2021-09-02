@@ -98,6 +98,32 @@ class ScoreView(
         disposition.handleShortcut(shortcut)
     }
 
+    private fun deleteElement(element: Element) {
+        associatedNodes.remove(element)!!.forEach { children.remove(it) }
+        noteHeads.remove(element)!!
+        elements.remove(element)
+    }
+
+    private fun clearScore() {
+        for (el in elements) {
+            deleteElement(el)
+        }
+        elements.clear()
+    }
+
+    private fun addElement(el: Element) {
+        TODO("Not yet implemented")
+    }
+
+    fun openScore(score: Score) {
+        clearScore()
+        for (el in score.elements) {
+            addElement(el)
+        }
+    }
+
+    fun getScore() = Score(elements)
+
     private abstract inner class Disposition {
         open fun init(old: Disposition) {}
 
@@ -113,7 +139,7 @@ class ScoreView(
 
         open fun mouseExited(ev: MouseEvent) {}
 
-        open fun elementTypeChanged(type: Element.Type) {}
+        open fun elementTypeChanged(type: Element.Type<*>) {}
 
         open fun instrumentChanged(instr: Instrument) {}
 
@@ -189,9 +215,7 @@ class ScoreView(
         }
 
         protected open fun deleteElement() = withElement { element, _ ->
-            associatedNodes.remove(element)!!.forEach { children.remove(it) }
-            noteHeads.remove(element)!!
-            elements.remove(element)
+            deleteElement(element)
         }
     }
 
@@ -265,7 +289,7 @@ class ScoreView(
             if (new is Pointer) new.selected = lastCreated
         }
 
-        override fun elementTypeChanged(type: Element.Type) {
+        override fun elementTypeChanged(type: Element.Type<*>) {
             phantomHead.setNoteHeadType(type.noteHeadType)
         }
 
@@ -290,12 +314,14 @@ class ScoreView(
             val pitch = getPitch(y)
             when (val t = elementTypeSelector.selected.value) {
                 Trill -> {
-                    val secondaryPitch = getPitch(0.0)
-                    val element = Trill(pitch, secondaryPitch)
+                    val element = Trill()
+                    element.pitch = pitch
+                    element.secondaryPitch = getPitch(0.0)
                     startElementCreation(element, moment, x, y)
                 }
-                is PitchedContinuousElement.Type -> {
-                    val element = PitchedContinuousElement(t, pitch)
+                is SimplePitchedContinuousElement.Type -> {
+                    val element = SimplePitchedContinuousElement(t)
+                    element.pitch = pitch
                     startElementCreation(element, moment, x, y)
                 }
                 is ContinuousNoise.Type -> {
@@ -303,7 +329,8 @@ class ScoreView(
                     startElementCreation(element, moment, x, y)
                 }
                 is DiscretePitchedElement.Type -> {
-                    val element = DiscretePitchedElement(t, pitch)
+                    val element = DiscretePitchedElement(t)
+                    element.pitch = pitch
                     addElement(element, x, y)
                 }
                 is DiscreteNoise.Type -> {

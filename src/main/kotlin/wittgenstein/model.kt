@@ -1,6 +1,24 @@
+@file: OptIn(ExperimentalSerializationApi::class, InternalSerializationApi::class)
+@file:Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
+
 package wittgenstein
 
+import kotlinx.serialization.*
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.*
+import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.contextual
 import wittgenstein.InstrumentFamily.*
+
+private val json = Json {
+    serializersModule = SerializersModule {
+        contextual(Accidental.Serializer)
+    }
+}
 
 enum class InstrumentFamily {
     Woodwinds, Brass, Percussion, Strings
@@ -27,7 +45,23 @@ enum class PitchName {
     C, D, E, F, G, A, B
 }
 
-sealed interface Accidental
+@Serializable(with = Accidental.Serializer::class)
+sealed interface Accidental {
+    object Serializer : KSerializer<Accidental> {
+        override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("accidental", PrimitiveKind.STRING)
+
+        override fun serialize(encoder: Encoder, value: Accidental) = encoder.encodeString(value.toString())
+
+        override fun deserialize(decoder: Decoder): Accidental {
+            val str = decoder.decodeString()
+            val u = str.count { it == 'u' }
+            val d = str.count { it == 'd' }
+            val reg = RegularAccidental.map[str.take(1)]
+            return if (reg != null) if (u - d == 0) reg else BendedAccidental(reg, u - d)
+            else QuarterToneAccidental.map[str]!!
+        }
+    }
+}
 
 enum class RegularAccidental : Accidental {
     Natural, Flat, Sharp;
@@ -36,6 +70,10 @@ enum class RegularAccidental : Accidental {
         Natural -> "n"
         Flat -> "f"
         Sharp -> "s"
+    }
+
+    companion object {
+        val map = values().associateBy { it.toString() }
     }
 }
 
@@ -48,15 +86,21 @@ enum class QuarterToneAccidental : Accidental {
         TreeQuarterFlat -> "tqf"
         TreeQuarterSharp -> "tqs"
     }
-}
 
-data class BendedAccidental(val reference: RegularAccidental, val adjust: Int) : Accidental {
-    override fun toString(): String {
-        val suff = "u".repeat(adjust.coerceAtLeast(0)) + "d".repeat((-adjust).coerceAtLeast(0))
-        return "${reference.toString()}$suff"
+    companion object {
+        val map = values().associateBy { it.toString() }
     }
 }
 
+@Serializable
+data class BendedAccidental(val reference: RegularAccidental, val adjust: Int) : Accidental {
+    override fun toString(): String {
+        val suff = "u".repeat(adjust.coerceAtLeast(0)) + "d".repeat((-adjust).coerceAtLeast(0))
+        return "$reference$suff"
+    }
+}
+
+@Serializable
 data class Pitch(val register: Int, val name: PitchName, val accidental: Accidental) {
     fun up(): Pitch =
         if (name == PitchName.B) Pitch(register + 1, PitchName.C, accidental)
@@ -75,6 +119,7 @@ enum class Dynamic {
     override fun toString(): String = name.lowercase()
 }
 
+@Serializable
 data class Moment(val bar: Int, val beat: Int) {
     fun next(): Moment = if (beat == 0) copy(beat = 1) else Moment(bar + 1, 0)
     fun prev(): Moment = if (beat == 1) copy(beat = 0) else Moment(bar - 1, 1)
@@ -84,55 +129,142 @@ enum class NoteHeadType {
     Regular, Triangle, Rectangle, Rhombus, Cross
 }
 
-interface Element {
-    val type: Type
+sealed interface Element {
+    val type: Type<Element>
     var instrument: Instrument?
     var start: Moment?
     var startDynamic: Dynamic?
 
-    sealed interface Type {
+    fun serialize(): JsonElement = buildJsonObject {
+        type.serialize(this@Element, this)
+    }
+
+    sealed interface Type<out E : Element> {
         val abbreviation: String
         val description: String
         val noteHeadType: NoteHeadType get() = NoteHeadType.Regular
+
+        fun createElement(): E
+
+        fun serialize(element: @UnsafeVariance E, obj: JsonObjectBuilder) {
+            obj.put("type", JsonPrimitive(abbreviation))
+            obj.put("instrument", json.encodeToJsonElement(element.instrument))
+            obj.put("start", json.encodeToString(element.start))
+            obj.put("startDynamic", JsonPrimitive(element.startDynamic?.name))
+        }
+
+        fun deserialize(obj: JsonObject, element: @UnsafeVariance E) {
+            element.instrument = json.decodeFromJsonElement(obj.getValue("instrument"))
+            element.start = json.decodeFromJsonElement(obj.getValue("start"))
+            element.startDynamic = json.decodeFromJsonElement(obj.getValue("startDynamic"))
+        }
+
+        fun deserialize(obj: JsonObject): E {
+            val el = createElement()
+            deserialize(obj, el)
+            return el
+        }
+    }
+
+    companion object {
+        val ALL_TYPES = listOf(
+            SimplePitchedContinuousElement.Regular,
+            Trill,
+            SimplePitchedContinuousElement.FlutterTongue,
+            SimplePitchedContinuousElement.Tremolo,
+            SimplePitchedContinuousElement.Repeat,
+            SimplePitchedContinuousElement.ColLegnoTratto,
+            SimplePitchedContinuousElement.Noisy,
+            ContinuousNoise.DrumRoll,
+            ContinuousNoise.Breath,
+            DiscretePitchedElement.Staccato,
+            DiscretePitchedElement.Pizzicato,
+            DiscretePitchedElement.Slap,
+            DiscreteNoise.Bang
+        )
+
+        private val map = ALL_TYPES.associateBy { it.abbreviation }
+
+        fun deserialize(json: JsonElement): Element {
+            require(json is JsonObject)
+            val abbr = json.getValue("type").jsonPrimitive.content
+            val type = map.getValue(abbr)
+            return type.deserialize(json)
+        }
     }
 }
 
 interface PitchedElement : Element {
-    override val type: Type
+    override val type: Type<PitchedElement>
     var pitch: Pitch
 
-    sealed interface Type : Element.Type
+    sealed interface Type<out E : PitchedElement> : Element.Type<E>
 }
 
-abstract class AbstractElement : Element {
+sealed class AbstractElement : Element {
     override var start: Moment? = null
     override var startDynamic: Dynamic? = null
     override var instrument: Instrument? = null
 }
 
-abstract class ContinuousElement : AbstractElement() {
-    abstract override val type: Type
+sealed class ContinuousElement : AbstractElement() {
+    abstract override val type: Type<ContinuousElement>
 
     var climax: Moment? = null
     var end: Moment? = null
     var climaxDynamic: Dynamic? = null
     var endDynamic: Dynamic? = null
 
-    sealed interface Type : Element.Type {
+    sealed interface Type<out E : ContinuousElement> : Element.Type<E> {
         val strokeDashArray: List<Double>? get() = null
+
+        override fun serialize(element: @UnsafeVariance E, obj: JsonObjectBuilder) {
+            super.serialize(element, obj)
+            obj.put("climax", json.encodeToJsonElement(element.climax))
+            obj.put("end", json.encodeToJsonElement(element.end))
+            obj.put("climaxDynamic", JsonPrimitive(element.climaxDynamic?.name))
+            obj.put("endDynamic", JsonPrimitive(element.endDynamic?.name))
+        }
+
+        override fun deserialize(obj: JsonObject, element: @UnsafeVariance E) {
+            element.climax = json.decodeFromJsonElement(obj.getValue("climax"))
+            element.end = json.decodeFromJsonElement(obj.getValue("end"))
+            element.climaxDynamic = json.decodeFromJsonElement(obj.getValue("climaxDynamic"))
+            element.endDynamic = json.decodeFromJsonElement(obj.getValue("endDynamic"))
+        }
     }
 }
 
-open class PitchedContinuousElement(
-    override val type: Type,
-    override var pitch: Pitch,
-) : ContinuousElement(), PitchedElement {
-    sealed class Type(
+sealed class PitchedContinuousElement : ContinuousElement(), PitchedElement {
+    abstract override val type: Type<PitchedContinuousElement>
+    override lateinit var pitch: Pitch
+
+    sealed class Type<out E : PitchedContinuousElement>(
         override val abbreviation: String,
         override val description: String
-    ) : PitchedElement.Type, ContinuousElement.Type
+    ) : PitchedElement.Type<E>, ContinuousElement.Type<E> {
+        override fun serialize(element: @UnsafeVariance E, obj: JsonObjectBuilder) {
+            super<ContinuousElement.Type>.serialize(element, obj)
+            obj.put("pitch", json.encodeToJsonElement(element.pitch))
+        }
+
+        override fun deserialize(obj: JsonObject, element: @UnsafeVariance E) {
+            super<ContinuousElement.Type>.deserialize(obj, element)
+            element.pitch = json.decodeFromJsonElement(obj.getValue("pitch"))
+        }
+    }
+}
+
+class SimplePitchedContinuousElement(
+    override val type: Type,
+) : PitchedContinuousElement() {
+    sealed class Type(abbreviation: String, description: String) :
+        PitchedContinuousElement.Type<SimplePitchedContinuousElement>(abbreviation, description) {
+        override fun createElement(): SimplePitchedContinuousElement = SimplePitchedContinuousElement(this)
+    }
 
     object Regular : Type("reg", "durchgehaltener Ton")
+
     object FlutterTongue : Type("f.t.", "Flatterzunge (Bläser)") {
         override val strokeDashArray: List<Double>
             get() = listOf(0.0, 6.0)
@@ -153,18 +285,38 @@ open class PitchedContinuousElement(
             get() = NoteHeadType.Triangle
     }
 
-    object Noisy: Type("noisy", "geräuschhaft (bei Bläsern mit viel Luft)") {
+    object Noisy : Type("noisy", "geräuschhaft (bei Bläsern mit viel Luft)") {
         override val noteHeadType: NoteHeadType
             get() = NoteHeadType.Triangle
     }
 }
 
-class Trill(pitch: Pitch, val secondaryPitch: Pitch) : PitchedContinuousElement(Trill, pitch) {
-    companion object : Type("tr", "Triller")
+class Trill : PitchedContinuousElement() {
+    lateinit var secondaryPitch: Pitch
+
+    override val type: Type<Trill>
+        get() = Trill
+
+    companion object : Type<Trill>("tr", "Triller") {
+        override fun createElement(): Trill = Trill()
+
+        override fun serialize(element: Trill, obj: JsonObjectBuilder) {
+            super.serialize(element, obj)
+            obj.put("secondaryPitch", json.encodeToJsonElement(element.secondaryPitch))
+        }
+
+        override fun deserialize(obj: JsonObject, element: Trill) {
+            super.deserialize(obj, element)
+            element.secondaryPitch = json.decodeFromJsonElement(obj.getValue("secondaryPitch"))
+        }
+    }
 }
 
 open class ContinuousNoise(override val type: Type) : ContinuousElement() {
-    sealed class Type(override val abbreviation: String, override val description: String) : ContinuousElement.Type
+    sealed class Type(override val abbreviation: String, override val description: String) :
+        ContinuousElement.Type<ContinuousNoise> {
+        override fun createElement(): ContinuousNoise = ContinuousNoise(this)
+    }
 
     object DrumRoll : Type("d.r.", "Trommelwirbel (Bass Drum, Snare, Pauke, Becken)") {
         override val noteHeadType: NoteHeadType
@@ -179,8 +331,25 @@ open class ContinuousNoise(override val type: Type) : ContinuousElement() {
     }
 }
 
-class DiscretePitchedElement(override val type: Type, override var pitch: Pitch) : AbstractElement(), PitchedElement {
-    sealed class Type(override val abbreviation: String, override val description: String) : PitchedElement.Type
+class DiscretePitchedElement(override val type: Type) : AbstractElement(), PitchedElement {
+    override lateinit var pitch: Pitch
+
+    sealed class Type(
+        override val abbreviation: String,
+        override val description: String
+    ) : PitchedElement.Type<DiscretePitchedElement> {
+        override fun createElement(): DiscretePitchedElement = DiscretePitchedElement(this)
+
+        override fun serialize(element: DiscretePitchedElement, obj: JsonObjectBuilder) {
+            super.serialize(element, obj)
+            obj.put("pitch", json.encodeToJsonElement(element.pitch))
+        }
+
+        override fun deserialize(obj: JsonObject, element: DiscretePitchedElement) {
+            super.deserialize(obj, element)
+            element.pitch = json.decodeFromJsonElement(obj.getValue("pitch"))
+        }
+    }
 
     object Staccato : Type("stacc.", "Staccato")
 
@@ -189,7 +358,6 @@ class DiscretePitchedElement(override val type: Type, override var pitch: Pitch)
             get() = NoteHeadType.Cross
     }
 
-
     object Slap : Type("s.t.", "Slap Tongue") {
         override val noteHeadType: NoteHeadType
             get() = NoteHeadType.Triangle
@@ -197,10 +365,48 @@ class DiscretePitchedElement(override val type: Type, override var pitch: Pitch)
 }
 
 class DiscreteNoise(override val type: Type) : AbstractElement() {
-    sealed class Type(override val abbreviation: String, override val description: String) : Element.Type
+    sealed class Type(override val abbreviation: String, override val description: String) :
+        Element.Type<DiscreteNoise> {
+        override fun createElement(): DiscreteNoise = DiscreteNoise(this)
+    }
 
     object Bang : Type("bang", "Schlag") {
         override val noteHeadType: NoteHeadType
             get() = NoteHeadType.Rectangle
     }
+}
+
+data class Score(val elements: List<Element>) {
+    fun encodeToString(): String {
+        val array = JsonArray(elements.map { it.serialize() })
+        return array.toString()
+    }
+
+    companion object {
+        fun decodeFromString(str: String): Score {
+            val array = Json.parseToJsonElement(str).jsonArray
+            return Score(array.map { Element.deserialize(it) })
+        }
+    }
+}
+
+fun main() {
+    val n = ContinuousNoise(ContinuousNoise.Breath).apply {
+        start = Moment(0, 0)
+        climaxDynamic = Dynamic.F
+        startDynamic = Dynamic.P
+        instrument = Instrument.Flute
+    }
+    val t = Trill().apply {
+        pitch = Pitch(4, PitchName.C, QuarterToneAccidental.QuarterFlat)
+        secondaryPitch = Pitch(4, PitchName.C, QuarterToneAccidental.QuarterSharp)
+        start = Moment(4, 1)
+        climaxDynamic = Dynamic.FFF
+        startDynamic = Dynamic.PPP
+        instrument = Instrument.Trombone
+    }
+    val score = Score(listOf(n, t))
+    val str = score.encodeToString()
+    println(str)
+    println(Score.decodeFromString(str))
 }

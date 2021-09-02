@@ -6,9 +6,11 @@ import javafx.scene.Scene
 import javafx.scene.control.Button
 import javafx.scene.layout.HBox
 import javafx.scene.layout.VBox
+import javafx.stage.FileChooser
 import javafx.stage.Stage
 import wittgenstein.Dynamic
 import wittgenstein.RegularAccidental
+import wittgenstein.Score
 import wittgenstein.gui.Shortcuts.ESCAPE
 import wittgenstein.gui.Shortcuts.FLAT
 import wittgenstein.gui.Shortcuts.LOUDER
@@ -22,12 +24,15 @@ import wittgenstein.gui.Shortcuts.SELECT_INSTRUMENT
 import wittgenstein.gui.Shortcuts.SELECT_TYPE
 import wittgenstein.gui.Shortcuts.SHARP
 import wittgenstein.gui.Shortcuts.TYPESET
+import java.io.File
 
 class App : Application() {
     private lateinit var stage: Stage
+    private lateinit var fileChooser: FileChooser
 
     override fun start(primaryStage: Stage) {
         stage = primaryStage
+        setupFileChooser()
         val actionsBar = ActionsBar()
         val typeSelector = ElementTypeSelector()
         val accidentalSelector = AccidentalSelector()
@@ -62,8 +67,18 @@ class App : Application() {
                 NATURAL -> accidentalSelector.regularAccidentalSelector.select(RegularAccidental.Natural)
                 FLAT -> accidentalSelector.regularAccidentalSelector.select(RegularAccidental.Flat)
                 SELECT_BEND -> accidentalSelector.pitchBendSelector.receiveFocus()
-                OPEN -> {}
-                SAVE -> {}
+                OPEN -> {
+                    val file = fileChooser.showOpenDialog(stage) ?: return@listen
+                    val encoded = file.readText()
+                    val score = Score.decodeFromString(encoded)
+                    scoreView.openScore(score)
+                }
+                SAVE -> {
+                    val file = fileChooser.showSaveDialog(stage) ?: return@listen
+                    val score = scoreView.getScore()
+                    val encoded = score.encodeToString()
+                    file.writeText(encoded)
+                }
                 PLAY -> {}
                 TYPESET -> {}
                 else -> scoreView.handleShortcut(shortcut)
@@ -72,6 +87,12 @@ class App : Application() {
         stage.scene = Scene(layout)
         stage.scene.stylesheets.add("wittgenstein/gui/style.css")
         stage.show()
+    }
+
+    private fun setupFileChooser() {
+        fileChooser = FileChooser()
+        fileChooser.extensionFilters.add(FileChooser.ExtensionFilter("Wittgenstein", "*.wtg"))
+        fileChooser.initialDirectory = File("examples/")
     }
 
     private fun containerButton(content: Node) = Button(null, content).apply {
