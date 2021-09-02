@@ -1,6 +1,9 @@
 package wittgenstein
 
+import javafx.scene.paint.Color
+import javafx.scene.shape.Line
 import wittgenstein.InstrumentFamily.*
+import wittgenstein.gui.NoteHead
 
 enum class InstrumentFamily {
     Woodwinds, Brass, Percussion, Strings
@@ -83,6 +86,10 @@ data class Moment(val bar: Int, val beat: Int) {
     fun prev(): Moment = if (beat == 1) copy(beat = 0) else Moment(bar - 1, 1)
 }
 
+enum class NoteHeadType {
+    Regular, Triangle, Rectangle, Rhombus, Cross
+}
+
 interface Element {
     val type: Type
     var instrument: Instrument?
@@ -92,6 +99,7 @@ interface Element {
     sealed interface Type {
         val abbreviation: String
         val description: String
+        val noteHeadType: NoteHeadType get() = NoteHeadType.Regular
     }
 }
 
@@ -116,7 +124,9 @@ abstract class ContinuousElement : AbstractElement() {
     var climaxDynamic: Dynamic? = null
     var endDynamic: Dynamic? = null
 
-    sealed interface Type : Element.Type
+    sealed interface Type : Element.Type {
+        val strokeDashArray: List<Double>? get() = null
+    }
 }
 
 open class PitchedContinuousElement(
@@ -129,11 +139,30 @@ open class PitchedContinuousElement(
     ) : PitchedElement.Type, ContinuousElement.Type
 
     object Regular : Type("reg", "durchgehaltener Ton")
-    object FlutterTongue : Type("f.t.", "Flatterzunge (Bläser)")
-    object Tremolo : Type("trm", "Tremolo (Streicher)")
-    object Repeat : Type("rep", "Tonwiederholung")
-    object ColLegnoTratto : Type("c.l.t.", "col legno tratto (Streicher)")
-    object Noisy: Type("noisy", "geräuschhaft (bei Bläsern mit viel Luft)")
+    object FlutterTongue : Type("f.t.", "Flatterzunge (Bläser)") {
+        override val strokeDashArray: List<Double>
+            get() = listOf(0.0, 6.0)
+    }
+
+    object Tremolo : Type("trm", "Tremolo (Streicher)") {
+        override val strokeDashArray: List<Double>
+            get() = listOf(2.0, 9.0)
+    }
+
+    object Repeat : Type("rep", "Tonwiederholung") {
+        override val strokeDashArray: List<Double>
+            get() = listOf(4.0, 11.0)
+    }
+
+    object ColLegnoTratto : Type("c.l.t.", "col legno tratto (Streicher)") {
+        override val noteHeadType: NoteHeadType
+            get() = NoteHeadType.Triangle
+    }
+
+    object Noisy: Type("noisy", "geräuschhaft (bei Bläsern mit viel Luft)") {
+        override val noteHeadType: NoteHeadType
+            get() = NoteHeadType.Triangle
+    }
 }
 
 class Trill(pitch: Pitch, val secondaryPitch: Pitch) : PitchedContinuousElement(Trill, pitch) {
@@ -143,20 +172,41 @@ class Trill(pitch: Pitch, val secondaryPitch: Pitch) : PitchedContinuousElement(
 open class ContinuousNoise(override val type: Type) : ContinuousElement() {
     sealed class Type(override val abbreviation: String, override val description: String) : ContinuousElement.Type
 
-    object DrumRoll : Type("d.r.", "Trommelwirbel (Bass Drum, Snare, Pauke, Becken)")
-    object Breath : Type("br.", "Atem (ganzes Orchester)")
+    object DrumRoll : Type("d.r.", "Trommelwirbel (Bass Drum, Snare, Pauke, Becken)") {
+        override val noteHeadType: NoteHeadType
+            get() = NoteHeadType.Rectangle
+
+        override val strokeDashArray: List<Double> = listOf(-0.0, 6.0)
+    }
+
+    object Breath : Type("br.", "Atem (ganzes Orchester)") {
+        override val noteHeadType: NoteHeadType
+            get() = NoteHeadType.Rhombus
+    }
 }
 
 class DiscretePitchedElement(override val type: Type, override var pitch: Pitch) : AbstractElement(), PitchedElement {
     sealed class Type(override val abbreviation: String, override val description: String) : PitchedElement.Type
 
-    object Pizzicato : Type("pizz.", "Pizzicato (Streicher)")
     object Staccato : Type("stacc.", "Staccato")
-    object Slap : Type("s.t.", "Slap Tongue")
+
+    object Pizzicato : Type("pizz.", "Pizzicato (Streicher)") {
+        override val noteHeadType: NoteHeadType
+            get() = NoteHeadType.Cross
+    }
+
+
+    object Slap : Type("s.t.", "Slap Tongue") {
+        override val noteHeadType: NoteHeadType
+            get() = NoteHeadType.Triangle
+    }
 }
 
 class DiscreteNoise(override val type: Type) : AbstractElement() {
     sealed class Type(override val abbreviation: String, override val description: String) : Element.Type
 
-    object Bang : Type("bang", "Schlag")
+    object Bang : Type("bang", "Schlag") {
+        override val noteHeadType: NoteHeadType
+            get() = NoteHeadType.Rectangle
+    }
 }

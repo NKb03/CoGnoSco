@@ -12,15 +12,16 @@ import wittgenstein.Dynamic
 import wittgenstein.Moment
 import kotlin.reflect.KMutableProperty0
 
-class DynamicViewElement(
+class DynamicView(
     referenceX: Property<Number>,
     referenceY: ObservableNumberValue,
     private val dynamicProperty: KMutableProperty0<Dynamic?>,
     momentProperty: KMutableProperty0<Moment?>,
-) : ViewElement, Text() {
+) : SelectableElement, Text() {
     init {
         font = Font.font("System", FontWeight.BOLD, FontPosture.ITALIC, 12.0)
         text = dynamicProperty.get().toString()
+        translateX = (3 - text.length) * 3.3
         xProperty().bindBidirectional(referenceX)
         yProperty().bind(Bindings.subtract(referenceY, 5))
         isFocusTraversable = true
@@ -31,6 +32,7 @@ class DynamicViewElement(
         set(value) {
             dynamicProperty.set(value)
             text = value.toString()
+            translateX = (3 - text.length) * 3.3
         }
 
     var moment: Moment? by momentProperty

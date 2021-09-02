@@ -1,35 +1,87 @@
 package wittgenstein.gui
 
-import javafx.scene.image.ImageView
+import javafx.scene.paint.Color
+import javafx.scene.shape.*
 import wittgenstein.Element
+import wittgenstein.NoteHeadType
 
-class NoteHead(val element: Element? = null, state: State = State.Regular) : ImageView(), ViewElement {
+class NoteHead(val element: Element? = null, state: State = State.Regular) : NodeWrapper<Shape>(), SelectableElement {
     constructor(state: State) : this(null, state)
 
     constructor(x: Double, y: Double, element: Element? = null, state: State = State.Regular) : this(element, state) {
-        this.x = x
-        this.y = y
+        this.layoutX = x
+        this.layoutY = y
     }
 
+    var x by this::layoutX
+    var y by this::layoutY
+
+    fun xProperty() = layoutXProperty()
+    fun yProperty() = layoutYProperty()
+
+    private var fill: Color = Color.BLACK
+        set(value) {
+            field = value
+            root.fill = value
+        }
+
     init {
-        image = loadImage(state.res)
         isFocusTraversable = true
-        isPreserveRatio = true
-        fitWidth = 20.0
+        setNoteHeadType(NoteHeadType.Regular)
+        regular()
     }
+
+    private fun fill(color: Color) = also { fill = color }
+
+    fun regular() = fill(Color.BLACK)
+
+    fun select() = fill(Color.BLUE)
+
+    fun inCreation() = fill(Color.GREEN)
+
+    fun phantom() = fill(Color.gray(0.5, 0.5))
 
     override var isSelected: Boolean = false
         set(value) {
-            field = value
-            state = if (isSelected) State.Selected else State.Regular
-            if (isSelected) requestFocus()
+            if (field != value) {
+                field = value
+                if (value) select() else regular()
+            }
         }
 
-    var state = state
-        set(value) {
-            field = value
-            image = loadImage(value.res)
+    fun setNoteHeadType(headType: NoteHeadType) {
+        val node = createShape(headType)
+        node.fill = this.fill
+        setRoot(node)
+    }
+
+    private fun createShape(headType: NoteHeadType): Shape = when (headType) {
+        NoteHeadType.Regular -> Ellipse(10.0, 7.0).apply {
+            rotate = -16.0
         }
+        NoteHeadType.Triangle -> Polygon(
+            0.0, 16.0,
+            10.0, 0.0,
+            20.0, 16.0
+        )
+        NoteHeadType.Rectangle -> Rectangle(22.0, 16.3)
+        NoteHeadType.Rhombus -> Polygon(
+            0.0, 8.0,
+            12.5, 16.0,
+            25.0, 8.0,
+            12.5, 0.0
+        )
+        NoteHeadType.Cross -> Shape.union(
+            Line(
+                0.0, 0.0,
+                15.0, 12.0
+            ).also { it.strokeWidth = 3.0 },
+            Line(
+                15.0, 0.0,
+                0.0, 12.0
+            ).also { it.strokeWidth = 3.0 }
+        )
+    }
 
     enum class State(val res: String) {
         Regular("notehead.png"),

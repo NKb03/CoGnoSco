@@ -17,6 +17,7 @@ import wittgenstein.gui.Shortcuts.OPEN
 import wittgenstein.gui.Shortcuts.PLAY
 import wittgenstein.gui.Shortcuts.QUIETER
 import wittgenstein.gui.Shortcuts.SAVE
+import wittgenstein.gui.Shortcuts.SELECT_BEND
 import wittgenstein.gui.Shortcuts.SELECT_INSTRUMENT
 import wittgenstein.gui.Shortcuts.SELECT_TYPE
 import wittgenstein.gui.Shortcuts.SHARP
@@ -60,6 +61,7 @@ class App : Application() {
                 SHARP -> accidentalSelector.regularAccidentalSelector.select(RegularAccidental.Sharp)
                 NATURAL -> accidentalSelector.regularAccidentalSelector.select(RegularAccidental.Natural)
                 FLAT -> accidentalSelector.regularAccidentalSelector.select(RegularAccidental.Flat)
+                SELECT_BEND -> accidentalSelector.pitchBendSelector.receiveFocus()
                 OPEN -> {}
                 SAVE -> {}
                 PLAY -> {}

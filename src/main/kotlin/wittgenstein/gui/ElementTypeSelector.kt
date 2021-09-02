@@ -18,7 +18,7 @@ class ElementTypeSelector : SelectorBar<Element.Type?>(listOf(null), continuousE
             PitchedContinuousElement.FlutterTongue,
             PitchedContinuousElement.Tremolo,
             PitchedContinuousElement.Repeat,
-            PitchedContinuousElement.Noisy,
+            PitchedContinuousElement.ColLegnoTratto,
             PitchedContinuousElement.Noisy,
             ContinuousNoise.DrumRoll,
             ContinuousNoise.Breath
@@ -28,7 +28,7 @@ class ElementTypeSelector : SelectorBar<Element.Type?>(listOf(null), continuousE
             DiscretePitchedElement.Staccato,
             DiscretePitchedElement.Pizzicato,
             DiscretePitchedElement.Slap,
-            DiscretePitchedElement.Slap
+            DiscreteNoise.Bang
         )
 
         val POINTER = null

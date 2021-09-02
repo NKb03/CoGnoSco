@@ -1,5 +1,5 @@
 package wittgenstein.gui
 
-interface ViewElement {
+interface SelectableElement {
     var isSelected: Boolean
 }

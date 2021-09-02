@@ -13,12 +13,12 @@ import wittgenstein.RegularAccidental
 
 class AccidentalSelector : HBox(5.0) {
     val regularAccidentalSelector = RegularAccidentalSelector()
-    private val pitchBendSelector = StandardBendSelector()
+    val pitchBendSelector = StandardBendSelector()
     private val resultView = ImageView()
 
     val selected: ObservableValue<Accidental> =
-        binding(regularAccidentalSelector.selected, pitchBendSelector.selected) { acc, bend ->
-            val adjust = centToAdjustment(bend)
+        binding(regularAccidentalSelector.selected, pitchBendSelector.selected) { acc, bend: Int? ->
+            val adjust = centToAdjustment(bend ?: 0)
             makeMicroTonalAccidental(adjust, acc)
         }
 
