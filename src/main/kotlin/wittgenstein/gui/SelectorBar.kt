@@ -1,6 +1,7 @@
 package wittgenstein.gui
 
 import javafx.beans.value.ObservableValue
+import javafx.geometry.Insets
 import javafx.scene.Node
 import javafx.scene.control.ToggleButton
 import javafx.scene.control.ToggleGroup
@@ -8,14 +9,14 @@ import javafx.scene.control.Tooltip
 import javafx.scene.layout.HBox
 import org.controlsfx.control.SegmentedButton
 
-abstract class SelectorBar<T>(vararg options: List<T>): HBox(10.0) {
+abstract class SelectorBar<T>(vararg options: List<T>) : HBox(10.0) {
     protected open fun extractGraphic(option: T): Node? = null
     protected open fun extractText(option: T): String? = null
     protected open fun extractDescription(option: T): String? = null
     protected open fun ToggleButton.extraConfig(option: T) {}
 
     private val map = mutableMapOf<T, ToggleButton>()
-    val toggleGroup = ToggleGroup()
+    private val toggleGroup = ToggleGroup()
 
     init {
         for (group in options) {
@@ -27,7 +28,10 @@ abstract class SelectorBar<T>(vararg options: List<T>): HBox(10.0) {
         toggleGroup.dontDeselectAll()
     }
 
-    val selected: ObservableValue<T> = toggleGroup.selectedToggleProperty().map { it?.userData } as ObservableValue<T>
+    val selected: ObservableValue<T> = toggleGroup.selectedToggleProperty().map {
+        @Suppress("UNCHECKED_CAST")
+        it?.userData as T
+    }
 
     private fun createSegment(group: List<T>): SegmentedButton {
         val seg = SegmentedButton()
@@ -37,6 +41,7 @@ abstract class SelectorBar<T>(vararg options: List<T>): HBox(10.0) {
             btn.userData = option
             btn.tooltip = this.extractDescription(option)?.let(::Tooltip)
             btn.prefHeight = 30.0
+            if (btn.graphic == null) setMargin(seg, Insets(5.0, 0.0, 5.0, 0.0))
             @Suppress("LeakingThis")
             btn.extraConfig(option)
             seg.buttons.add(btn)

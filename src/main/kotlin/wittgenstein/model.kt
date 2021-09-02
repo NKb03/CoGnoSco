@@ -1,9 +1,6 @@
 package wittgenstein
 
-import javafx.scene.paint.Color
-import javafx.scene.shape.Line
 import wittgenstein.InstrumentFamily.*
-import wittgenstein.gui.NoteHead
 
 enum class InstrumentFamily {
     Woodwinds, Brass, Percussion, Strings
@@ -30,39 +27,34 @@ enum class PitchName {
     C, D, E, F, G, A, B
 }
 
-sealed interface Accidental {
-    val resourceName: String
-}
+sealed interface Accidental
 
 enum class RegularAccidental : Accidental {
     Natural, Flat, Sharp;
 
-    override val resourceName: String
-        get() = when (this) {
-            Natural -> "n"
-            Flat -> "f"
-            Sharp -> "s"
-        }
+    override fun toString(): String = when (this) {
+        Natural -> "n"
+        Flat -> "f"
+        Sharp -> "s"
+    }
 }
 
 enum class QuarterToneAccidental : Accidental {
     QuarterFlat, QuarterSharp, TreeQuarterFlat, TreeQuarterSharp;
 
-    override val resourceName: String
-        get() = when (this) {
-            QuarterFlat -> "qf"
-            QuarterSharp -> "qs"
-            TreeQuarterFlat -> "tqf"
-            TreeQuarterSharp -> "tqs"
-        }
+    override fun toString(): String = when (this) {
+        QuarterFlat -> "qf"
+        QuarterSharp -> "qs"
+        TreeQuarterFlat -> "tqf"
+        TreeQuarterSharp -> "tqs"
+    }
 }
 
 data class BendedAccidental(val reference: RegularAccidental, val adjust: Int) : Accidental {
-    override val resourceName: String
-        get() {
-            val suff = "u".repeat(adjust.coerceAtLeast(0)) + "d".repeat((-adjust).coerceAtLeast(0))
-            return "${reference.resourceName}$suff"
-        }
+    override fun toString(): String {
+        val suff = "u".repeat(adjust.coerceAtLeast(0)) + "d".repeat((-adjust).coerceAtLeast(0))
+        return "${reference.toString()}$suff"
+    }
 }
 
 data class Pitch(val register: Int, val name: PitchName, val accidental: Accidental) {
@@ -73,6 +65,8 @@ data class Pitch(val register: Int, val name: PitchName, val accidental: Acciden
     fun down(): Pitch =
         if (name == PitchName.C) Pitch(register - 1, PitchName.B, accidental)
         else copy(name = PitchName.values()[name.ordinal - 1])
+
+    override fun toString(): String = "$name$register$accidental"
 }
 
 enum class Dynamic {

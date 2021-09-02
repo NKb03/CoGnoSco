@@ -1,8 +1,6 @@
 package wittgenstein.gui
 
 import javafx.beans.Observable
-import javafx.beans.binding.Binding
-import javafx.beans.binding.Bindings
 import javafx.beans.property.SimpleObjectProperty
 import javafx.beans.value.ObservableValue
 import javafx.scene.Node
@@ -12,16 +10,8 @@ import javafx.scene.image.Image
 import javafx.scene.image.ImageView
 import wittgenstein.Accidental
 
-fun toggleButton(text: String) = ToggleButton(text).apply { styleToggleButton() }
-
-fun toggleButton(graphic: Node) = ToggleButton(null, graphic).apply { styleToggleButton() }
-
-private fun ToggleButton.styleToggleButton() {
-//    isFocusTraversable = false
-}
-
 fun loadImage(acc: Accidental): Image {
-    val res = "accidentals/${acc.resourceName}.png"
+    val res = "accidentals/$acc.png"
     return loadImage(res)
 }
 
@@ -34,19 +24,9 @@ fun loadImage(res: String): Image = imageCache.getOrPut(res) {
 
 fun Image.view() = ImageView(this)
 
-fun ImageView.scaleBy(factor: Double) = apply {
-    isPreserveRatio = true
-    isSmooth = true
-    fitHeight = image.height * factor
-}
-
 fun ImageView.fitHeight(height: Double) = apply {
     isPreserveRatio = true
     fitHeight = height
-}
-
-fun ImageView.opacity(value: Double) = apply {
-    opacity = value
 }
 
 fun ToggleGroup.dontDeselectAll() {

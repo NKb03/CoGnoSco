@@ -5,10 +5,8 @@ import javafx.scene.shape.*
 import wittgenstein.Element
 import wittgenstein.NoteHeadType
 
-class NoteHead(val element: Element? = null, state: State = State.Regular) : NodeWrapper<Shape>(), SelectableElement {
-    constructor(state: State) : this(null, state)
-
-    constructor(x: Double, y: Double, element: Element? = null, state: State = State.Regular) : this(element, state) {
+class NoteHead(val element: Element? = null) : NodeWrapper<Shape>(), SelectableElement {
+    constructor(x: Double, y: Double, element: Element? = null) : this(element) {
         this.layoutX = x
         this.layoutY = y
     }
@@ -16,8 +14,8 @@ class NoteHead(val element: Element? = null, state: State = State.Regular) : Nod
     var x by this::layoutX
     var y by this::layoutY
 
-    fun xProperty() = layoutXProperty()
-    fun yProperty() = layoutYProperty()
+    fun xProperty() = layoutXProperty()!!
+    fun yProperty() = layoutYProperty()!!
 
     private var fill: Color = Color.BLACK
         set(value) {
@@ -81,12 +79,5 @@ class NoteHead(val element: Element? = null, state: State = State.Regular) : Nod
                 0.0, 12.0
             ).also { it.strokeWidth = 3.0 }
         )
-    }
-
-    enum class State(val res: String) {
-        Regular("notehead.png"),
-        Phantom("notehead_gray.png"),
-        InCreation("notehead_green.png"),
-        Selected("notehead_blue.png")
     }
 }

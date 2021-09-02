@@ -4,7 +4,6 @@ import javafx.beans.binding.Bindings
 import javafx.beans.property.SimpleDoubleProperty
 import javafx.event.EventTarget
 import javafx.scene.Node
-import javafx.scene.image.ImageView
 import javafx.scene.input.KeyCombination
 import javafx.scene.input.MouseEvent
 import javafx.scene.layout.Pane
@@ -62,36 +61,35 @@ class ScoreView(
         setOnMouseExited { ev -> disposition.mouseExited(ev) }
     }
 
-    private fun normalizeCoords(ev: MouseEvent) = Pair(ev.x.toInt() / 20 * 20.0, (ev.y.toInt() + 12) / 25 * 25.0)
+    private fun normalizeCoords(ev: MouseEvent): Pair<Double, Double> {
+        val x = ev.x.toInt() / 20 * 20.0
+        val y = (ev.y.toInt() + 12) / 25 * 25.0
+        return Pair(x.coerceAtLeast(200.0), y.coerceIn(25.0, 1075.0))
+    }
 
     private fun setupClefs() {
         val bass = loadImage("clefs/bass.png")
-        val bassView = ImageView(bass)
+        val bassView = bass.view().fitHeight(bass.height / 5)
         val violin = loadImage("clefs/violin.png")
-        val violinView = ImageView(violin)
-        bassView.isPreserveRatio = true
-        violinView.isPreserveRatio = true
-        bassView.fitHeight = bass.height / 5
-        violinView.fitHeight = violin.height / 5
-        children.add(bassView)
+        val violinView = violin.view().fitHeight(violin.height / 5)
         bassView.x = 20.0
-        bassView.y = 550.0
+        bassView.y = 650.0
         violinView.x = 20.0
-        violinView.y = 160.0
-        children.add(violinView)
+        violinView.y = 260.0
+        children.addAll(violinView, bassView)
     }
 
     private fun setupLines() {
         for (i in 10..1000) {
-            val l = Line(i * 20.0, 0.0, i * 20.0, 1000.0)
+            val l = Line(i * 20.0, 0.0, i * 20.0, 1100.0)
             val g = if (i % 10 == 0) 0.3 else 0.7
             if (i % 2 != 0) l.strokeDashArray.addAll(2.0, 2.0)
             l.stroke = Color.gray(g)
             children.add(l)
         }
-        for (i in 5..15) {
+        for (i in 7..17) {
             val l = Line(0.0, i * 50.0, 10000.0, i * 50.0)
-            l.strokeWidth = if (i == 10) 5.0 else 3.0
+            l.strokeWidth = if (i == 12) 5.0 else 3.0
             children.add(l)
         }
     }
@@ -278,8 +276,8 @@ class ScoreView(
         override fun mouseMoved(ev: MouseEvent) {
             val (x, y) = normalizeCoords(ev)
             phantomHead.isVisible = true
-            phantomHead.x = x.coerceAtLeast(200.0)
-            phantomHead.y = (y - 8).coerceIn(17.0..967.0)
+            phantomHead.x = x
+            phantomHead.y = y - 8
         }
 
         override fun mouseExited(ev: MouseEvent) {
@@ -289,15 +287,14 @@ class ScoreView(
         override fun mouseClicked(ev: MouseEvent) {
             val (x, y) = normalizeCoords(ev)
             val moment = getMoment(x)
+            val pitch = getPitch(y)
             when (val t = elementTypeSelector.selected.value) {
                 Trill -> {
-                    val pitch = getPitch(y)
                     val secondaryPitch = getPitch(0.0)
                     val element = Trill(pitch, secondaryPitch)
                     startElementCreation(element, moment, x, y)
                 }
                 is PitchedContinuousElement.Type -> {
-                    val pitch = getPitch(y)
                     val element = PitchedContinuousElement(t, pitch)
                     startElementCreation(element, moment, x, y)
                 }
@@ -306,7 +303,6 @@ class ScoreView(
                     startElementCreation(element, moment, x, y)
                 }
                 is DiscretePitchedElement.Type -> {
-                    val pitch = getPitch(y)
                     val element = DiscretePitchedElement(t, pitch)
                     addElement(element, x, y)
                 }
@@ -358,7 +354,14 @@ class ScoreView(
             disposition = ElementInCreation(element, head, removableNodes)
         }
 
-        private fun getPitch(y: Double) = Pitch(4, PitchName.C, accidentalSelector.selected.value)
+        private fun getPitch(y: Double): Pitch {
+            val step = 52 - y.toInt() / 25
+            val register = step / 7
+            val pitchName = PitchName.values()[step % 7]
+            val p = Pitch(register, pitchName, accidentalSelector.selected.value)
+            println("$y -> $p")
+            return p
+        }
     }
 
     private inner class ElementInCreation(
