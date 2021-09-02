@@ -17,7 +17,7 @@ import wittgenstein.RegularAccidental
 import kotlin.properties.Delegates
 
 class AccidentalSelector : HBox(5.0) {
-    private val regularAccidentalSelector = RegularAccidentalSelector()
+    val regularAccidentalSelector = RegularAccidentalSelector()
     private val bendButtons = STANDARD_BENDS.associateWith { txt -> toggleButton(txt.toStringSigned()) }
     private val pitchBendChoice = SegmentedButton()
     private val pitchBendField = TextField()
@@ -41,7 +41,7 @@ class AccidentalSelector : HBox(5.0) {
         resultAccidentalView.fitHeight = 30.0
         resultAccidentalView.isSmooth = true
         val cont = Button(null, resultAccidentalView)
-        cont.isFocusTraversable = false
+//        cont.isFocusTraversable = false
         cont.prefHeight = 40.0
         cont.prefWidth = 40.0
         return cont
@@ -69,7 +69,10 @@ class AccidentalSelector : HBox(5.0) {
         pitchBendField.setOnAction {
             bend = validateBend(pitchBendField.text) ?: 0
             val btn = bendButtons[bend]
-            if (btn != null) btn.isSelected = true
+            if (btn != null) {
+                btn.isSelected = true
+                btn.requestFocus()
+            }
             else pitchBendChoice.toggleGroup.selectToggle(null)
         }
         pitchBendChoice.toggleGroup.selectedToggleProperty().addListener { _, _, t ->
@@ -155,7 +158,7 @@ class AccidentalSelector : HBox(5.0) {
         bendButtons[value]!!.isSelected = true
     }
 
-    private class RegularAccidentalSelector : SelectorBar<RegularAccidental>(RegularAccidental.values().asList()) {
+    class RegularAccidentalSelector : SelectorBar<RegularAccidental>(RegularAccidental.values().asList()) {
         override fun extractGraphic(option: RegularAccidental): Node = loadImage(option).view().fitHeight(30.0)
     }
 

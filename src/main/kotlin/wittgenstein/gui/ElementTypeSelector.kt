@@ -43,6 +43,16 @@ class ElementTypeSelector : HBox(10.0) {
         continuousTypes[txt] ?: discreteTypes[txt] ?: error("unknown element type '$txt'")
     }, group.selectedToggleProperty())
 
+    fun selectPointer() {
+        pointerButton.isSelected = true
+        pointerButton.requestFocus()
+    }
+
+    fun receiveFocus() {
+        val btn = group.selectedToggle as ToggleButton
+        btn.requestFocus()
+    }
+
     companion object {
         private val continuousTypes = mapOf(
             "reg" to PitchedContinuousElement.Regular,

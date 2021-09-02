@@ -62,15 +62,26 @@ data class BendedAccidental(val reference: RegularAccidental, val adjust: Int) :
         }
 }
 
+data class Pitch(val register: Int, val name: PitchName, val accidental: Accidental) {
+    fun up(): Pitch =
+        if (name == PitchName.B) Pitch(register + 1, PitchName.C, accidental)
+        else copy(name = PitchName.values()[name.ordinal + 1])
+
+    fun down(): Pitch =
+        if (name == PitchName.C) Pitch(register - 1, PitchName.B, accidental)
+        else copy(name = PitchName.values()[name.ordinal - 1])
+}
+
 enum class Dynamic {
     PPP, PP, P, MP, MF, F, FF, FFF;
 
     override fun toString(): String = name.lowercase()
 }
 
-data class Pitch(val register: Int, val name: PitchName, val accidental: Accidental)
-
-data class Moment(val bar: Int, val beat: Int)
+data class Moment(val bar: Int, val beat: Int) {
+    fun next(): Moment = if (beat == 0) copy(beat = 1) else Moment(bar + 1, 0)
+    fun prev(): Moment = if (beat == 1) copy(beat = 0) else Moment(bar - 1, 1)
+}
 
 interface Element {
     val type: Type

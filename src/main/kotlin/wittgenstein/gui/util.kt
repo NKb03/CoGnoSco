@@ -12,7 +12,7 @@ fun toggleButton(text: String) = ToggleButton(text).apply { styleToggleButton() 
 fun toggleButton(graphic: Node) = ToggleButton(null, graphic).apply { styleToggleButton() }
 
 private fun ToggleButton.styleToggleButton() {
-    isFocusTraversable = false
+//    isFocusTraversable = false
 }
 
 fun loadImage(acc: Accidental): Image {

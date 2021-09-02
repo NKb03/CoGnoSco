@@ -17,14 +17,15 @@ abstract class SelectorBar<T : Any>(options: List<T>) : SegmentedButton() {
     private val map = mutableMapOf<T, ToggleButton>()
 
     fun select(option: T) {
-        map.getValue(option).isSelected = true
+        val btn = map.getValue(option)
+        btn.isSelected = true
+        btn.requestFocus()
     }
 
     init {
         for (option in options) {
             val btn = ToggleButton(this.extractText(option), this.extractGraphic(option))
             map[option] = btn
-            btn.isFocusTraversable = false
             btn.userData = option
             btn.tooltip = this.extractDescription(option)?.let(::Tooltip)
             btn.prefHeight = 30.0
@@ -38,6 +39,12 @@ abstract class SelectorBar<T : Any>(options: List<T>) : SegmentedButton() {
     }
 
     val selected: Binding<T> = Bindings.createObjectBinding({
+        @Suppress("UNCHECKED_CAST")
         toggleGroup.selectedToggle?.userData as T? ?: options[0]
     }, toggleGroup.selectedToggleProperty())
+
+    fun receiveFocus() {
+        val btn = toggleGroup.selectedToggle as ToggleButton
+        btn.requestFocus()
+    }
 }
