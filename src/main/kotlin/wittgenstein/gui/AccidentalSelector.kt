@@ -3,7 +3,6 @@ package wittgenstein.gui
 import javafx.beans.value.ObservableValue
 import javafx.scene.Node
 import javafx.scene.control.Button
-import javafx.scene.image.Image
 import javafx.scene.image.ImageView
 import javafx.scene.layout.HBox
 import wittgenstein.Accidental
@@ -17,9 +16,9 @@ class AccidentalSelector : HBox(5.0) {
     private val resultView = ImageView()
 
     val selected: ObservableValue<Accidental> =
-        binding(regularAccidentalSelector.selected, pitchBendSelector.selected) { acc, bend: Int? ->
+        binding(regularAccidentalSelector.selected, pitchBendSelector.selected) { acc: RegularAccidental?, bend: Int? ->
             val adjust = centToAdjustment(bend ?: 0)
-            makeMicroTonalAccidental(adjust, acc)
+            makeMicroTonalAccidental(adjust, acc ?: RegularAccidental.Natural)
         }
 
     init {

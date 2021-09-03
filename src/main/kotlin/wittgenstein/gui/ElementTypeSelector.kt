@@ -1,7 +1,8 @@
 package wittgenstein.gui
 
 import javafx.scene.Node
-import wittgenstein.*
+import wittgenstein.ContinuousElement
+import wittgenstein.Element
 
 class ElementTypeSelector : SelectorBar<Element.Type<*>?>(listOf(null), continuousElementTypes, discreteElementTypes) {
     override fun extractGraphic(option: Element.Type<*>?): Node? =

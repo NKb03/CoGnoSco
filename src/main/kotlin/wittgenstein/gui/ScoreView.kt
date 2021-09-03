@@ -12,6 +12,7 @@ import javafx.scene.shape.Line
 import wittgenstein.*
 import wittgenstein.gui.Shortcuts.DELETE
 import wittgenstein.gui.Shortcuts.DOWN
+import wittgenstein.gui.Shortcuts.ENTER
 import wittgenstein.gui.Shortcuts.LEFT
 import wittgenstein.gui.Shortcuts.RIGHT
 import wittgenstein.gui.Shortcuts.UP
@@ -23,10 +24,13 @@ class ScoreView(
     private val instrumentSelector: InstrumentSelector,
     private val dynamicsSelector: DynamicSelector
 ) : Pane() {
+    private val elements = mutableListOf<Element>()
+    private val associatedNodes = mutableMapOf<Element, MutableList<Node>>()
     private val noteHeads = mutableMapOf<Element, NoteHead>()
     private val accidentalViews = mutableMapOf<Element, AccidentalView>()
-    private val associatedNodes = mutableMapOf<Element, List<Node>>()
-    private val elements = mutableListOf<Element>()
+    private val trillAccidentalViews = mutableMapOf<Trill, AccidentalView>()
+    private val startDynamics = mutableMapOf<Element, DynamicView>()
+
     private var disposition: Disposition by Delegates.observable(Pointer()) { _, old, new ->
         old.replaced(new)
         new.init(old)
@@ -98,6 +102,11 @@ class ScoreView(
         disposition.handleShortcut(shortcut)
     }
 
+    private fun add(element: Element, vararg nodes: Node) {
+        associatedNodes.getOrPut(element) { mutableListOf() }.addAll(nodes)
+        children.addAll(*nodes)
+    }
+
     private fun deleteElement(element: Element) {
         associatedNodes.remove(element)!!.forEach { children.remove(it) }
         noteHeads.remove(element)!!
@@ -111,9 +120,72 @@ class ScoreView(
         elements.clear()
     }
 
-    private fun addElement(el: Element) {
-        TODO("Not yet implemented")
+    private fun addElement(element: Element) {
+        val head = NoteHead(element)
+        head.x = element.start!!.getX()
+        head.setNoteHeadType(element.type.noteHeadType)
+        noteHeads[element] = head
+        val dynamic = DynamicView(head.xProperty(), head.yProperty(), element::startDynamic, element::start)
+        add(element, head, dynamic)
+        if (element is PitchedElement) {
+            head.y = element.pitch.getY()
+            val accidental = AccidentalView(element.pitch.accidental, head)
+            accidentalViews[element] = accidental
+            add(element, accidental)
+        } else {
+            head.y = element.customY!!
+        }
+        if (element is ContinuousElement && element.climax != null && element.end != null) {
+            val line = createDurationLine(element, head)
+            val climaxX = SimpleDoubleProperty(element.climax!!.getX())
+            val climax = DynamicView(climaxX, head.yProperty(), element::climaxDynamic, element::climax)
+            val endX = SimpleDoubleProperty(element.end!!.getX())
+            val end = DynamicView(endX, head.yProperty(), element::endDynamic, element::end)
+            line.endXProperty().bind(Bindings.add(end.xProperty(), 10))
+            add(element, line, climax, end)
+        }
+        if (element is Trill && element.secondaryPitch != null) {
+            val littleHead = NoteHead(element).scale(0.6)
+            val littleAccidental = AccidentalView(element.secondaryPitch!!.accidental, littleHead)
+            layoutSecondaryPitch(element, head, littleHead, littleAccidental)
+        }
+        elements.add(element)
     }
+
+    private fun createDurationLine(element: ContinuousElement, head: NoteHead): Line {
+        val line = Line()
+        line.startXProperty().bind(Bindings.add(head.xProperty(), 15))
+        line.startYProperty().bind(Bindings.add(head.yProperty(), 8))
+        line.endYProperty().bind(Bindings.add(head.yProperty(), 8))
+        line.strokeWidth = 5.0
+        line.strokeDashArray.addAll(element.type.strokeDashArray.orEmpty())
+        return line
+    }
+
+    private fun layoutSecondaryPitch(trill: Trill, head: NoteHead, littleHead: NoteHead, accidental: AccidentalView) {
+        val lp = NoteHead.leftParentheses().scale(0.6)
+        val rp = NoteHead.rightParentheses().scale(0.6)
+        lp.strokeProperty().bind(littleHead.root.fillProperty())
+        rp.strokeProperty().bind(littleHead.root.fillProperty())
+        littleHead.xProperty().bind(binding(littleHead.yProperty(), head.yProperty(), head.xProperty()) {
+            if (littleHead.y == head.y + 1) head.x + 35 else head.x + 15
+        })
+        littleHead.y = head.y + 1
+        lp.layoutXProperty().bind(accidental.xProperty().subtract(10))
+        rp.layoutXProperty().bind(littleHead.xProperty().add(2))
+        lp.layoutYProperty().bind(littleHead.yProperty().subtract(4))
+        rp.layoutYProperty().bind(littleHead.yProperty().subtract(4))
+        val connector = Line()
+        connector.startXProperty().bind(head.xProperty().add(10))
+        connector.startYProperty().bind(head.yProperty().add(7))
+        connector.endXProperty().bind(littleHead.xProperty().add(10))
+        connector.endYProperty().bind(littleHead.yProperty().add(7))
+        connector.strokeProperty().bind(littleHead.root.fillProperty())
+        val diffY = littleHead.yProperty().subtract(head.yProperty())
+        connector.visibleProperty().bind(diffY.greaterThan(30).or(diffY.lessThan(-30)))
+        add(trill, littleHead, accidental, lp, rp, connector)
+    }
+
 
     fun openScore(score: Score) {
         clearScore()
@@ -157,8 +229,11 @@ class ScoreView(
             element.instrument = instr
         }
 
-        override fun accidentalChanged(acc: Accidental) = withElement { element, _ ->
-            if (element is PitchedElement) {
+        override fun accidentalChanged(acc: Accidental) = withElement { element, head ->
+            if (element is Trill && head.scaleX == 0.6) {
+                element.secondaryPitch = element.secondaryPitch
+                trillAccidentalViews[element]!!.setAccidental(acc)
+            } else if (element is PitchedElement) {
                 element.pitch = element.pitch.copy(accidental = acc)
                 accidentalViews[element]!!.setAccidental(acc)
             }
@@ -180,8 +255,10 @@ class ScoreView(
 
         private fun moveLeft() {
             withElement { element, head ->
-                element.start = element.start?.prev()
-                head.x -= 20
+                if (head.scaleX == 1.0) {
+                    element.start = element.start?.prev()
+                    head.x -= 20
+                }
             }
             withDynamic { element ->
                 element.moment = element.moment?.prev()
@@ -191,8 +268,10 @@ class ScoreView(
 
         private fun moveRight() {
             withElement { element, head ->
-                element.start = element.start?.next()
-                head.x += 20
+                if (head.scaleX == 1.0) {
+                    element.start = element.start?.next()
+                    head.x += 20
+                }
             }
             withDynamic { element ->
                 element.moment = element.moment?.next()
@@ -201,21 +280,30 @@ class ScoreView(
         }
 
         private fun moveUp() = withElement { element, head ->
-            if (element is PitchedElement) {
-                element.pitch = element.pitch.up()
+            when {
+                element is Trill && head.scaleX == 0.6 -> element.secondaryPitch = element.secondaryPitch!!.up()
+                element is PitchedElement -> element.pitch = element.pitch.up()
+                else -> element.customY = element.customY!! - 25
             }
             head.y -= 25.0
         }
 
         private fun moveDown() = withElement { element, head ->
-            if (element is PitchedElement) {
-                element.pitch = element.pitch.down()
+            when {
+                element is Trill && head.scaleX == 0.0 -> element.secondaryPitch = element.secondaryPitch!!.down()
+                element is PitchedElement -> element.pitch = element.pitch.down()
+                else -> element.customY = element.customY!! + 25
             }
             head.y += 25.0
         }
 
-        protected open fun deleteElement() = withElement { element, _ ->
-            deleteElement(element)
+        protected open fun deleteElement() = withElement { element, head ->
+            if (element is Trill && head.scaleX == 0.6) {
+                val subst = SimplePitchedContinuousElement(SimplePitchedContinuousElement.Regular)
+                subst.copyFrom(element)
+                deleteElement(element)
+                addElement(subst)
+            } else deleteElement(element)
         }
     }
 
@@ -266,6 +354,11 @@ class ScoreView(
         private var lastCreatedDynamic: DynamicView? = null
     ) : EditElement() {
         private val phantomHead = NoteHead().phantom()
+        private val phantomAccidental = AccidentalView(accidentalSelector.selected.value, phantomHead).phantom()
+
+        init {
+            phantomAccidental.visibleProperty().bind(phantomHead.visibleProperty())
+        }
 
         override fun withElement(block: (element: Element, head: NoteHead) -> Unit) {
             val el = lastCreated
@@ -280,12 +373,12 @@ class ScoreView(
 
         override fun init(old: Disposition) {
             phantomHead.setNoteHeadType(elementTypeSelector.selected.value!!.noteHeadType)
-            children.add(phantomHead)
+            children.addAll(phantomHead, phantomAccidental)
             phantomHead.isVisible = false
         }
 
         override fun replaced(new: Disposition) {
-            children.remove(phantomHead)
+            children.removeAll(phantomHead, phantomAccidental)
             if (new is Pointer) new.selected = lastCreated
         }
 
@@ -310,102 +403,47 @@ class ScoreView(
 
         override fun mouseClicked(ev: MouseEvent) {
             val (x, y) = normalizeCoords(ev)
-            val moment = getMoment(x)
-            val pitch = getPitch(y)
-            when (val t = elementTypeSelector.selected.value) {
-                Trill -> {
-                    val element = Trill()
-                    element.pitch = pitch
-                    element.secondaryPitch = getPitch(0.0)
-                    startElementCreation(element, moment, x, y)
-                }
-                is SimplePitchedContinuousElement.Type -> {
-                    val element = SimplePitchedContinuousElement(t)
-                    element.pitch = pitch
-                    startElementCreation(element, moment, x, y)
-                }
-                is ContinuousNoise.Type -> {
-                    val element = ContinuousNoise(t)
-                    startElementCreation(element, moment, x, y)
-                }
-                is DiscretePitchedElement.Type -> {
-                    val element = DiscretePitchedElement(t)
-                    element.pitch = pitch
-                    addElement(element, x, y)
-                }
-                is DiscreteNoise.Type -> {
-                    val element = DiscreteNoise(t)
-                    addElement(element, x, y)
-                }
-            }
-        }
-
-        private fun addElement(element: Element, x: Double, y: Double) {
+            val element = elementTypeSelector.selected.value?.createElement() ?: return
             element.start = getMoment(x)
             element.startDynamic = dynamicsSelector.selected.value
-            element.instrument = instrumentSelector.selected.value
-            val nodes = mutableListOf<Node>()
-            val head = NoteHead(x, y - 8, element)
-            head.setNoteHeadType(element.type.noteHeadType)
-            noteHeads[element] = head
-            nodes.add(head)
-            val dynamic = DynamicView(head.xProperty(), head.yProperty(), element::startDynamic, element::start)
-            nodes.add(dynamic)
-            if (element is PitchedElement) {
-                val accidental = AccidentalView(element.pitch.accidental, head)
-                accidentalViews[element] = accidental
-                nodes.add(accidental)
-            }
-            associatedNodes[element] = nodes
-            children.addAll(nodes)
-            elements.add(element)
+            if (element is PitchedElement) element.pitch = getPitch(y)
+            else element.customY = y - 8
+            addElement(element)
             lastCreated?.isSelected = false
-            lastCreated = head
-            head.isSelected = true
-            lastCreatedDynamic = dynamic
-        }
-
-        private fun startElementCreation(element: ContinuousElement, moment: Moment, x: Double, y: Double) {
-            element.start = moment
-            element.startDynamic = dynamicsSelector.selected.value
-            val head = NoteHead(x, y - 8, element).inCreation()
-            head.setNoteHeadType(element.type.noteHeadType)
-            val removableNodes = mutableListOf<Node>()
-            if (element is PitchedElement) {
-                val accidental = AccidentalView(element.pitch.accidental, head)
-                accidentalViews[element] = accidental
-                children.add(accidental)
-                removableNodes.add(accidental)
+            when (element) {
+                is Trill -> disposition = TrillInCreation(element)
+                is ContinuousElement -> disposition = ElementInCreation(element)
+                else -> {
+                    val head = noteHeads.getValue(element)
+                    lastCreated = head
+                    head.isSelected = true
+                    lastCreatedDynamic = startDynamics[element]
+                }
             }
-            lastCreated?.isSelected = false
-            disposition = ElementInCreation(element, head, removableNodes)
         }
 
         private fun getPitch(y: Double): Pitch {
             val step = 52 - y.toInt() / 25
             val register = step / 7
             val pitchName = PitchName.values()[step % 7]
-            val p = Pitch(register, pitchName, accidentalSelector.selected.value)
-            println("$y -> $p")
-            return p
+            return Pitch(register, pitchName, accidentalSelector.selected.value)
+        }
+
+        override fun accidentalChanged(acc: Accidental) {
+            phantomAccidental.setAccidental(acc)
         }
     }
 
-    private inner class ElementInCreation(
-        private val element: ContinuousElement,
-        private val head: NoteHead,
-        private val removableNodes: MutableList<Node>
-    ) : EditElement() {
-        private val line = Line()
-        private var minX = head.x + 15
+    private inner class ElementInCreation(private val element: ContinuousElement) : EditElement() {
+        private val head = noteHeads.getValue(element)
+        private val line = createDurationLine(element, head)
+        private var minX = head.x + 20
+        private var finished = false
 
-        init {
-            line.startXProperty().bind(Bindings.add(head.xProperty(), 15))
-            line.startYProperty().bind(Bindings.add(head.yProperty(), 8))
-            line.endX = line.startX
-            line.endYProperty().bind(Bindings.add(head.yProperty(), 8))
-            line.strokeWidth = 5.0
-            line.strokeDashArray.addAll(element.type.strokeDashArray.orEmpty())
+        override fun init(old: Disposition) {
+            head.inCreation()
+            add(element, line)
+            line.endX = minX
         }
 
         override fun withElement(block: (element: Element, head: NoteHead) -> Unit) {
@@ -414,15 +452,12 @@ class ScoreView(
 
         override fun withDynamic(block: (element: DynamicView) -> Unit) {}
 
-        override fun init(old: Disposition) {
-            add(line)
-            add(head)
-            add(DynamicView(head.xProperty(), head.yProperty(), element::startDynamic, element::start))
-        }
-
         override fun replaced(new: Disposition) {
-            for (node in removableNodes) children.remove(node)
-            if (new is Pointer) new.selected = head
+            if (!finished) deleteElement(element)
+            else {
+                head.isSelected = true
+                if (new is Pointer) new.selected = head
+            }
         }
 
         override fun mouseClicked(ev: MouseEvent) {
@@ -432,33 +467,27 @@ class ScoreView(
             if (element.climax == null) {
                 element.climax = getMoment(x)
                 element.climaxDynamic = dynamicsSelector.selected.value
-                add(DynamicView(xProp, head.yProperty(), element::climaxDynamic, element::climax))
+                val dynamic = DynamicView(xProp, head.yProperty(), element::climaxDynamic, element::climax)
+                add(element, dynamic)
                 minX = x + 20
             } else {
                 element.end = getMoment(x)
                 element.endDynamic = dynamicsSelector.selected.value
                 val dynamic = DynamicView(xProp, head.yProperty(), element::endDynamic, element::end)
-                line.endXProperty().bind(Bindings.add(dynamic.xProperty(), 10))
-                add(dynamic)
-                element.instrument = instrumentSelector.selected.value
-                elements.add(element)
-                noteHeads[element] = head
-                head.isSelected = true
-                associatedNodes[element] = removableNodes.toList()
-                removableNodes.clear()
+                line.endXProperty().bind(dynamic.xProperty())
+                add(element, dynamic)
+                finished = true
                 disposition = CreateElement(head, null)
             }
         }
 
-        override fun deleteElement() {}
-
-        private fun add(node: Node) {
-            children.add(node)
-            removableNodes.add(node)
+        override fun deleteElement() {
+            disposition = CreateElement()
         }
 
         override fun mouseMoved(ev: MouseEvent) {
-            line.endX = ev.x.coerceAtLeast(minX)
+            val (x, _) = normalizeCoords(ev)
+            line.endX = x.coerceAtLeast(minX)
         }
 
         override fun accidentalChanged(acc: Accidental) {
@@ -468,8 +497,67 @@ class ScoreView(
         }
     }
 
+    private inner class TrillInCreation(private val trill: Trill) : EditElement() {
+        private val head = noteHeads.getValue(trill)
+        private val littleHead = NoteHead(trill).phantom().scale(0.6)
+        private val littleAccidental =
+            AccidentalView(accidentalSelector.selected.value, littleHead).phantom().scale(0.6)
+        private var finished = false
+
+        init {
+            trill.secondaryPitch = trill.pitch
+            trillAccidentalViews[trill] = littleAccidental
+            layoutSecondaryPitch(trill, head, littleHead, littleAccidental)
+        }
+
+        override fun withElement(block: (element: Element, head: NoteHead) -> Unit) = block(trill, head)
+
+        override fun withDynamic(block: (element: DynamicView) -> Unit) = block(startDynamics.getValue(trill))
+
+        override fun replaced(new: Disposition) {
+            if (!finished) deleteElement(trill)
+        }
+
+        override fun handleShortcut(ev: KeyCombination) {
+            when (ev) {
+                UP -> {
+                    littleHead.y -= 25
+                    trill.secondaryPitch = trill.secondaryPitch!!.up()
+                }
+                DOWN -> {
+                    littleHead.y += 25
+                    trill.secondaryPitch = trill.secondaryPitch!!.down()
+                }
+                ENTER -> finish()
+            }
+        }
+
+        private fun finish() {
+            littleHead.regular()
+            littleAccidental.regular()
+            finished = true
+            disposition = ElementInCreation(trill)
+        }
+
+        override fun accidentalChanged(acc: Accidental) {
+            trill.secondaryPitch = trill.secondaryPitch!!.copy(accidental = acc)
+            littleAccidental.setAccidental(acc)
+        }
+
+        override fun deleteElement() {
+            disposition = CreateElement()
+        }
+    }
+
     companion object {
         private fun getMoment(x: Double) = Moment(x.toInt() / 40 - 10, (x.toInt() / 20) % 2)
+
+        private fun Pitch.getY(): Double {
+            val step = register * 7 + name.ordinal
+            return (52 - step) * 25.0 - 8
+        }
+
+        private fun Moment.getX(): Double = bar * 40.0 + beat * 20.0 + 400.0
 
         private fun findSelectableElement(target: EventTarget?): SelectableElement? = when (target) {
             is SelectableElement -> target

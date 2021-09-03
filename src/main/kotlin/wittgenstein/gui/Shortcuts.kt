@@ -8,6 +8,7 @@ import javafx.scene.input.KeyEvent
 object Shortcuts {
     val ESCAPE: KeyCombination = KeyCombination.valueOf("ESCAPE")
     val DELETE: KeyCombination = KeyCombination.valueOf("DELETE")
+    val ENTER: KeyCombination = KeyCombination.valueOf("Ctrl+ENTER")
     val DOWN: KeyCombination = KeyCombination.valueOf("CTRL+DOWN")
     val UP: KeyCombination = KeyCombination.valueOf("CTRL+UP")
     val RIGHT: KeyCombination = KeyCombination.valueOf("CTRL+RIGHT")
@@ -26,7 +27,7 @@ object Shortcuts {
     val TYPESET: KeyCombination = KeyCombination.valueOf("Ctrl+P")
 
     private val shortcuts = listOf(
-        DELETE, DOWN, UP, RIGHT, LEFT,
+        DELETE, DOWN, UP, RIGHT, LEFT, ENTER,
         SELECT_TYPE, SELECT_INSTRUMENT,
         LOUDER, QUIETER,
         SHARP, FLAT, NATURAL, SELECT_BEND,

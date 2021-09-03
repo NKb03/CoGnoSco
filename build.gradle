@@ -21,6 +21,7 @@ mainClassName = 'wittgenstein.gui.App'
 
 dependencies {
     compile 'org.jetbrains.kotlin:kotlin-stdlib'
+    compile 'org.jetbrains.kotlin:kotlin-reflect'
     compile 'org.controlsfx:controlsfx:11.1.0'
     compile 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.2'
 }

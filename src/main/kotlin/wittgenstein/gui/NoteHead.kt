@@ -6,11 +6,6 @@ import wittgenstein.Element
 import wittgenstein.NoteHeadType
 
 class NoteHead(val element: Element? = null) : NodeWrapper<Shape>(), SelectableElement {
-    constructor(x: Double, y: Double, element: Element? = null) : this(element) {
-        this.layoutX = x
-        this.layoutY = y
-    }
-
     var x by this::layoutX
     var y by this::layoutY
 
@@ -37,7 +32,7 @@ class NoteHead(val element: Element? = null) : NodeWrapper<Shape>(), SelectableE
 
     fun inCreation() = fill(Color.GREEN)
 
-    fun phantom() = fill(Color.gray(0.5, 0.5))
+    fun phantom() = fill(Color.gray(0.0, 0.5))
 
     override var isSelected: Boolean = false
         set(value) {
@@ -79,5 +74,18 @@ class NoteHead(val element: Element? = null) : NodeWrapper<Shape>(), SelectableE
                 0.0, 12.0
             ).also { it.strokeWidth = 3.0 }
         )
+    }
+
+    companion object {
+        fun leftParentheses() = QuadCurve(7.0, 0.0, 0.0, 10.0, 7.0, 20.0).apply {
+            stroke = Color.BLACK
+            fill = Color.TRANSPARENT
+        }
+
+
+        fun rightParentheses() = QuadCurve(13.0, 0.0, 20.0, 10.0, 13.0, 20.0).apply {
+            stroke = Color.BLACK
+            fill = Color.TRANSPARENT
+        }
     }
 }

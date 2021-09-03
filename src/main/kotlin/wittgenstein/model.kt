@@ -13,6 +13,9 @@ import kotlinx.serialization.json.*
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.contextual
 import wittgenstein.InstrumentFamily.*
+import kotlin.reflect.KMutableProperty1
+import kotlin.reflect.KProperty1
+import kotlin.reflect.full.memberProperties
 
 private val json = Json {
     serializersModule = SerializersModule {
@@ -126,7 +129,7 @@ data class Moment(val bar: Int, val beat: Int) {
 }
 
 enum class NoteHeadType {
-    Regular, Triangle, Rectangle, Rhombus, Cross
+    Regular, Triangle, Rectangle, Rhombus, Cross;
 }
 
 sealed interface Element {
@@ -134,36 +137,45 @@ sealed interface Element {
     var instrument: Instrument?
     var start: Moment?
     var startDynamic: Dynamic?
+    var customY: Double?
+
+    fun copyFrom(original: Element) {
+        instrument = original.instrument
+        start = original.start
+        startDynamic = original.startDynamic
+        customY = original.customY
+    }
 
     fun serialize(): JsonElement = buildJsonObject {
-        type.serialize(this@Element, this)
+        val element = this@Element
+        put("type", JsonPrimitive(type.abbreviation))
+        @Suppress("UNCHECKED_CAST")
+        for (prop in element::class.memberProperties as List<KProperty1<Element, Any?>>) {
+            if (prop !is KMutableProperty1) continue
+            val value = prop.get(element) ?: continue
+            val serializer = serializer(prop.returnType)
+            val encoded = if (value is Enum<*>) JsonPrimitive(value.name) else json.encodeToJsonElement(serializer, value)
+            put(prop.name, encoded)
+        }
+    }
+
+    fun deserialize(obj: JsonObject) {
+        @Suppress("UNCHECKED_CAST")
+        for (prop in this::class.memberProperties as List<KProperty1<Element, Any?>>) {
+            if (prop !is KMutableProperty1) continue
+            val value = obj[prop.name] ?: continue
+            val serializer = serializer(prop.returnType)
+            prop.set(this, json.decodeFromJsonElement(serializer, value))
+        }
     }
 
     sealed interface Type<out E : Element> {
         val abbreviation: String
         val description: String
         val noteHeadType: NoteHeadType get() = NoteHeadType.Regular
+        val properties get() = listOf("instrument", "start", "startDynamic", "customY")
 
         fun createElement(): E
-
-        fun serialize(element: @UnsafeVariance E, obj: JsonObjectBuilder) {
-            obj.put("type", JsonPrimitive(abbreviation))
-            obj.put("instrument", json.encodeToJsonElement(element.instrument))
-            obj.put("start", json.encodeToString(element.start))
-            obj.put("startDynamic", JsonPrimitive(element.startDynamic?.name))
-        }
-
-        fun deserialize(obj: JsonObject, element: @UnsafeVariance E) {
-            element.instrument = json.decodeFromJsonElement(obj.getValue("instrument"))
-            element.start = json.decodeFromJsonElement(obj.getValue("start"))
-            element.startDynamic = json.decodeFromJsonElement(obj.getValue("startDynamic"))
-        }
-
-        fun deserialize(obj: JsonObject): E {
-            val el = createElement()
-            deserialize(obj, el)
-            return el
-        }
     }
 
     companion object {
@@ -189,7 +201,9 @@ sealed interface Element {
             require(json is JsonObject)
             val abbr = json.getValue("type").jsonPrimitive.content
             val type = map.getValue(abbr)
-            return type.deserialize(json)
+            val el = type.createElement()
+            el.deserialize(json)
+            return el
         }
     }
 }
@@ -198,6 +212,11 @@ interface PitchedElement : Element {
     override val type: Type<PitchedElement>
     var pitch: Pitch
 
+    override fun copyFrom(original: Element) {
+        super.copyFrom(original)
+        if (original is PitchedElement) pitch = original.pitch
+    }
+
     sealed interface Type<out E : PitchedElement> : Element.Type<E>
 }
 
@@ -205,6 +224,7 @@ sealed class AbstractElement : Element {
     override var start: Moment? = null
     override var startDynamic: Dynamic? = null
     override var instrument: Instrument? = null
+    override var customY: Double? = null
 }
 
 sealed class ContinuousElement : AbstractElement() {
@@ -215,23 +235,18 @@ sealed class ContinuousElement : AbstractElement() {
     var climaxDynamic: Dynamic? = null
     var endDynamic: Dynamic? = null
 
+    override fun copyFrom(original: Element) {
+        super.copyFrom(original)
+        if (original is ContinuousElement) {
+            climax = original.climax
+            end = original.end
+            climaxDynamic = original.climaxDynamic
+            endDynamic = original.endDynamic
+        }
+    }
+
     sealed interface Type<out E : ContinuousElement> : Element.Type<E> {
         val strokeDashArray: List<Double>? get() = null
-
-        override fun serialize(element: @UnsafeVariance E, obj: JsonObjectBuilder) {
-            super.serialize(element, obj)
-            obj.put("climax", json.encodeToJsonElement(element.climax))
-            obj.put("end", json.encodeToJsonElement(element.end))
-            obj.put("climaxDynamic", JsonPrimitive(element.climaxDynamic?.name))
-            obj.put("endDynamic", JsonPrimitive(element.endDynamic?.name))
-        }
-
-        override fun deserialize(obj: JsonObject, element: @UnsafeVariance E) {
-            element.climax = json.decodeFromJsonElement(obj.getValue("climax"))
-            element.end = json.decodeFromJsonElement(obj.getValue("end"))
-            element.climaxDynamic = json.decodeFromJsonElement(obj.getValue("climaxDynamic"))
-            element.endDynamic = json.decodeFromJsonElement(obj.getValue("endDynamic"))
-        }
     }
 }
 
@@ -239,20 +254,15 @@ sealed class PitchedContinuousElement : ContinuousElement(), PitchedElement {
     abstract override val type: Type<PitchedContinuousElement>
     override lateinit var pitch: Pitch
 
+    override fun copyFrom(original: Element) {
+        super<ContinuousElement>.copyFrom(original)
+        super<PitchedElement>.copyFrom(original)
+    }
+
     sealed class Type<out E : PitchedContinuousElement>(
         override val abbreviation: String,
         override val description: String
-    ) : PitchedElement.Type<E>, ContinuousElement.Type<E> {
-        override fun serialize(element: @UnsafeVariance E, obj: JsonObjectBuilder) {
-            super<ContinuousElement.Type>.serialize(element, obj)
-            obj.put("pitch", json.encodeToJsonElement(element.pitch))
-        }
-
-        override fun deserialize(obj: JsonObject, element: @UnsafeVariance E) {
-            super<ContinuousElement.Type>.deserialize(obj, element)
-            element.pitch = json.decodeFromJsonElement(obj.getValue("pitch"))
-        }
-    }
+    ) : PitchedElement.Type<E>, ContinuousElement.Type<E>
 }
 
 class SimplePitchedContinuousElement(
@@ -292,23 +302,20 @@ class SimplePitchedContinuousElement(
 }
 
 class Trill : PitchedContinuousElement() {
-    lateinit var secondaryPitch: Pitch
+    var secondaryPitch: Pitch? = null
+
+    override fun copyFrom(original: Element) {
+        super.copyFrom(original)
+        if (original is Trill) {
+            secondaryPitch = original.secondaryPitch
+        }
+    }
 
     override val type: Type<Trill>
         get() = Trill
 
     companion object : Type<Trill>("tr", "Triller") {
         override fun createElement(): Trill = Trill()
-
-        override fun serialize(element: Trill, obj: JsonObjectBuilder) {
-            super.serialize(element, obj)
-            obj.put("secondaryPitch", json.encodeToJsonElement(element.secondaryPitch))
-        }
-
-        override fun deserialize(obj: JsonObject, element: Trill) {
-            super.deserialize(obj, element)
-            element.secondaryPitch = json.decodeFromJsonElement(obj.getValue("secondaryPitch"))
-        }
     }
 }
 
@@ -339,16 +346,6 @@ class DiscretePitchedElement(override val type: Type) : AbstractElement(), Pitch
         override val description: String
     ) : PitchedElement.Type<DiscretePitchedElement> {
         override fun createElement(): DiscretePitchedElement = DiscretePitchedElement(this)
-
-        override fun serialize(element: DiscretePitchedElement, obj: JsonObjectBuilder) {
-            super.serialize(element, obj)
-            obj.put("pitch", json.encodeToJsonElement(element.pitch))
-        }
-
-        override fun deserialize(obj: JsonObject, element: DiscretePitchedElement) {
-            super.deserialize(obj, element)
-            element.pitch = json.decodeFromJsonElement(obj.getValue("pitch"))
-        }
     }
 
     object Staccato : Type("stacc.", "Staccato")

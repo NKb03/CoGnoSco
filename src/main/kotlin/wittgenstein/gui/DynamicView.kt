@@ -21,9 +21,9 @@ class DynamicView(
     init {
         font = Font.font("System", FontWeight.BOLD, FontPosture.ITALIC, 12.0)
         text = dynamicProperty.get().toString()
-        translateX = (3 - text.length) * 3.3
+        translateX = (3 - text.length) * 3.0
         xProperty().bindBidirectional(referenceX)
-        yProperty().bind(Bindings.subtract(referenceY, 5))
+        yProperty().bind(Bindings.add(referenceY, 30))
         isFocusTraversable = true
     }
 
@@ -32,7 +32,7 @@ class DynamicView(
         set(value) {
             dynamicProperty.set(value)
             text = value.toString()
-            translateX = (3 - text.length) * 3.3
+            translateX = (3 - text.length) * 3.0
         }
 
     var moment: Moment? by momentProperty

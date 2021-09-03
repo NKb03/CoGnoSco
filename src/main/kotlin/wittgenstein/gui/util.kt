@@ -4,7 +4,6 @@ import javafx.beans.Observable
 import javafx.beans.property.SimpleObjectProperty
 import javafx.beans.value.ObservableValue
 import javafx.scene.Node
-import javafx.scene.control.ToggleButton
 import javafx.scene.control.ToggleGroup
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
@@ -18,8 +17,8 @@ fun loadImage(acc: Accidental): Image {
 private val imageCache = mutableMapOf<String, Image>()
 
 fun loadImage(res: String): Image = imageCache.getOrPut(res) {
-    val url = App::class.java.getResource(res)!!.toExternalForm()
-    return Image(url)
+    val url = App::class.java.getResource(res) ?: error("resource $res not found")
+    return Image(url.toExternalForm())
 }
 
 fun Image.view() = ImageView(this)
@@ -28,6 +27,12 @@ fun ImageView.fitHeight(height: Double) = apply {
     isPreserveRatio = true
     fitHeight = height
 }
+
+fun <N : Node> N.scale(factor: Double): N = also {
+    scaleX = factor
+    scaleY = factor
+}
+
 
 fun ToggleGroup.dontDeselectAll() {
     selectedToggleProperty().addListener { _, old, new ->
