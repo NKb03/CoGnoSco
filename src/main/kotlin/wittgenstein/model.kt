@@ -12,6 +12,7 @@ import kotlinx.serialization.json.*
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.contextual
 import wittgenstein.InstrumentFamily.*
+import java.io.File
 import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.memberProperties
@@ -452,9 +453,13 @@ data class GraphicalScore(val elements: List<Element>) {
     }
 
     companion object {
-        fun decodeFromString(str: String): GraphicalScore {
+        private fun decodeFromString(str: String): GraphicalScore = try {
             val array = Json.parseToJsonElement(str).jsonArray
-            return GraphicalScore(array.map { Element.deserialize(it) })
+            GraphicalScore(array.map { Element.deserialize(it) })
+        } catch (ex: SerializationException) {
+            throw WittgensteinException("Invalid input file", ex)
         }
+
+        fun load(file: File) = decodeFromString(file.readText())
     }
 }

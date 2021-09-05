@@ -12,9 +12,7 @@ import javafx.scene.layout.HBox
 import javafx.scene.layout.VBox
 import javafx.stage.FileChooser
 import javafx.stage.Stage
-import wittgenstein.Dynamic
-import wittgenstein.GraphicalScore
-import wittgenstein.RegularAccidental
+import wittgenstein.*
 import wittgenstein.gui.ActionsBar.Action
 import wittgenstein.gui.Shortcuts.ESCAPE
 import wittgenstein.gui.Shortcuts.FLAT
@@ -31,7 +29,7 @@ import wittgenstein.gui.Shortcuts.SHARP
 import wittgenstein.gui.Shortcuts.TYPESET
 import wittgenstein.gui.impl.loadImage
 import wittgenstein.gui.impl.show
-import wittgenstein.lily.TypesettingException
+import wittgenstein.WittgensteinException
 import wittgenstein.lily.typeset
 import wittgenstein.midi.Pulsator
 import wittgenstein.midi.RTMidiOutput
@@ -78,7 +76,15 @@ class App : Application() {
         addIcons()
         stage.scene = Scene(layout)
         stage.scene.stylesheets.add("wittgenstein/gui/style.css")
+        openArgumentFile()
         stage.show()
+    }
+
+    private fun openArgumentFile() {
+        if (parameters.raw.isNotEmpty()) {
+            val file = File(parameters.raw[0])
+            open(file)
+        }
     }
 
     private fun setExceptionHandler() {
@@ -98,7 +104,7 @@ class App : Application() {
         val msg = exc.localizedMessage ?: exc.message ?: "<null>"
         when (exc) {
             is PrivilegedActionException -> handleUncaughtException(exc.exception)
-            is TypesettingException -> ERROR.show(msg)
+            is WittgensteinException -> ERROR.show(msg)
             else -> ERROR.show("Unerwarteter Fehler: '${msg}', see log.")
         }
         exc.printStackTrace()
@@ -147,8 +153,11 @@ class App : Application() {
 
     private fun open() {
         val file = fileChooser.showOpenDialog(stage) ?: return
-        val encoded = file.readText()
-        val score = GraphicalScore.decodeFromString(encoded)
+        open(file)
+    }
+
+    private fun open(file: File) {
+        val score = GraphicalScore.load(file)
         scoreView.openScore(score)
         defaultFile = file
     }
@@ -163,31 +172,21 @@ class App : Application() {
         return defaultFile
     }
 
-    private fun run(vararg command: String, wait: Boolean) {
-        val dir = defaultFile?.parentFile ?: File("")
-        val process = ProcessBuilder(*command)
-            .inheritIO()
-            .directory(dir)
-            .start()
+    private fun run(vararg command: String): Process {
+        val process = defaultFile.run(*command)
         subProcesses.add(process)
-        if (wait) {
-            val exitCode = process.waitFor()
-            if (exitCode != 0) {
-                error("Command '${command.joinToString(" ")}' finished with non-zero exit code")
-            }
-        }
+        return process
     }
 
     private fun typeset() {
         val file = save() ?: return
-        val dir = file.parentFile
-        val name = file.nameWithoutExtension
-        val ly = dir.resolve("$name.ly")
+        val name = file.name.removeSuffix(".wtg.json")
+        val ly = file.resolveSibling("$name.ly")
         val score = scoreView.getScore()
         thread(isDaemon = true) {
             typeset(score, ly)
-            run("lilypond", "$name.ly", wait = true)
-            run("okular", "--unique", "$name.pdf", wait = false)
+            run("lilypond", "$name.ly").join()
+            run("okular", "--unique", "$name.pdf")
         }.setUncaughtExceptionHandler { _, exc -> handleUncaughtException(exc) }
     }
 
@@ -228,13 +227,6 @@ class App : Application() {
         for (proc in processes) {
             if (proc.isAlive) proc.destroy()
             kill(proc.descendants())
-        }
-    }
-
-    companion object {
-        @JvmStatic
-        fun main(args: Array<String>) {
-            launch(App::class.java)
         }
     }
 }
