@@ -43,4 +43,6 @@ class DynamicView(
             fill = if (isSelected) Color.BLUE else Color.BLACK
             if (isSelected) requestFocus()
         }
+
+    override fun toString(): String = "DynamicView [ dynamic = $dynamic, time = $time, selected = $isSelected ]"
 }

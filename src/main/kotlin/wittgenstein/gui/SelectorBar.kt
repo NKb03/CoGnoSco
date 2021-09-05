@@ -61,4 +61,6 @@ abstract class SelectorBar<T>(vararg options: List<T>) : HBox(10.0) {
         val btn = toggleGroup.selectedToggle as ToggleButton
         btn.requestFocus()
     }
+
+    override fun toString(): String = "${this::class.simpleName} [ selected = ${selected.value} ]"
 }

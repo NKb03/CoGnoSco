@@ -1,0 +1,142 @@
+[
+  {
+    "type": "perc.",
+    "pitch": {
+      "register": 4,
+      "name": "G",
+      "accidental": "n"
+    },
+    "instrument": "Violins",
+    "start": 1,
+    "startDynamic": "PPP"
+  },
+  {
+    "type": "perc.",
+    "pitch": {
+      "register": 4,
+      "name": "E",
+      "accidental": "n"
+    },
+    "instrument": "Violins",
+    "start": 2,
+    "startDynamic": "PPP"
+  },
+  {
+    "type": "perc.",
+    "pitch": {
+      "register": 4,
+      "name": "B",
+      "accidental": "n"
+    },
+    "instrument": "Violins",
+    "start": 3,
+    "startDynamic": "PPP"
+  },
+  {
+    "type": "perc.",
+    "pitch": {
+      "register": 4,
+      "name": "G",
+      "accidental": "n"
+    },
+    "instrument": "Violins",
+    "start": 4,
+    "startDynamic": "PPP"
+  },
+  {
+    "type": "perc.",
+    "pitch": {
+      "register": 4,
+      "name": "E",
+      "accidental": "n"
+    },
+    "instrument": "Violins",
+    "start": 5,
+    "startDynamic": "PPP"
+  },
+  {
+    "type": "perc.",
+    "pitch": {
+      "register": 4,
+      "name": "B",
+      "accidental": "n"
+    },
+    "instrument": "Violins",
+    "start": 6,
+    "startDynamic": "PPP"
+  },
+  {
+    "type": "reg",
+    "climax": 6,
+    "climaxDynamic": "PPP",
+    "end": 10,
+    "endDynamic": "PPP",
+    "instrument": "Violins",
+    "pitch": {
+      "register": 3,
+      "name": "B",
+      "accidental": "n"
+    },
+    "startDynamic": "PPP"
+  },
+  {
+    "type": "reg",
+    "climax": 12,
+    "climaxDynamic": "PPP",
+    "end": 15,
+    "endDynamic": "PPP",
+    "instrument": "Saxophone",
+    "pitch": {
+      "register": 5,
+      "name": "E",
+      "accidental": "n"
+    },
+    "start": 6,
+    "startDynamic": "PPP"
+  },
+  {
+    "type": "reg",
+    "climax": 22,
+    "climaxDynamic": "PPP",
+    "end": 26,
+    "endDynamic": "PPP",
+    "instrument": "Saxophone",
+    "pitch": {
+      "register": 5,
+      "name": "C",
+      "accidental": "n"
+    },
+    "start": 16,
+    "startDynamic": "PPP"
+  },
+  {
+    "type": "fastrep",
+    "climax": 32,
+    "climaxDynamic": "PPP",
+    "end": 45,
+    "endDynamic": "PPP",
+    "instrument": "Clarinet",
+    "pitch": {
+      "register": 5,
+      "name": "A",
+      "accidental": "n"
+    },
+    "start": 15,
+    "startDynamic": "PPP"
+  },
+  {
+    "type": "rep",
+    "climax": 38,
+    "climaxDynamic": "PPP",
+    "end": 52,
+    "endDynamic": "PPP",
+    "instrument": "Clarinet",
+    "pitch": {
+      "register": 4,
+      "name": "E",
+      "accidental": "n"
+    },
+    "start": 21,
+    "startDynamic": "PPP"
+  }
+]

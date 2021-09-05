@@ -81,4 +81,6 @@ class ElementTypesetter(private val writer: LilypondWriter) : LilypondWriter by 
     operator fun invoke(block: ElementTypesetter.() -> Unit) {
         "" { block() }
     }
+
+    override fun toString(): String = "ElementTypesetter [ currentTime = $currentTime ]"
 }

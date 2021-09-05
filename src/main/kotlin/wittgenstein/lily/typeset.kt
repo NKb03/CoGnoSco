@@ -19,7 +19,7 @@ private fun PitchName.lilypond(): String = name.lowercase()
 fun Pitch.lilypond(): String {
     val apostrophes = "'".repeat((register - 3).coerceAtLeast(0))
     val commas = ",".repeat((3 - register).coerceAtLeast(0))
-    return "${name.lilypond()}${accidental.lilypond()}$apostrophes$commas"
+    return "${name.lilypond()}${accidental.lilypond()}$apostrophes$commas!"
 }
 
 fun Dynamic.lilypond(): String = "\\${name.lowercase()}"

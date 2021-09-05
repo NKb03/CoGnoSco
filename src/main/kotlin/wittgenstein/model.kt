@@ -17,6 +17,7 @@ import kotlin.reflect.KProperty1
 import kotlin.reflect.full.memberProperties
 
 private val json = Json {
+    prettyPrint = true
     serializersModule = SerializersModule {
         contextual(Accidental.Serializer)
     }
@@ -40,7 +41,7 @@ enum class Instrument(
     val clef: Clef,
     val transpose: Int,
     val program: Int,
-    val key: Int = -1
+    val key: Int? = null
 ) {
     Flute("Flöte", "Fl.", Woodwinds, Clef.Violin, 0, 74),
     Oboe("Oboe", "Ob.", Woodwinds, Clef.Violin, 0, 69),
@@ -60,8 +61,10 @@ enum class Instrument(
     Contrabasses("Kontrabass", "Kb.", Strings, Clef.Bass, +8, 44)
 }
 
-enum class PitchName {
-    C, D, E, F, G, A, B;
+enum class PitchName(val chromaticStep: Int) {
+    C(0), D(2), E(4), F(5), G(7), A(9), B(11);
+
+    val diatonicStep get() = ordinal
 }
 
 @Serializable(with = Accidental.Serializer::class)
@@ -147,15 +150,17 @@ data class BendedAccidental(override val reference: RegularAccidental, override 
 data class Pitch(val register: Int, val name: PitchName, val accidental: Accidental) {
     fun up(): Pitch =
         if (name == PitchName.B) Pitch(register + 1, PitchName.C, accidental)
-        else copy(name = PitchName.values()[name.ordinal + 1])
+        else copy(name = PitchName.values()[name.diatonicStep + 1])
 
     fun down(): Pitch =
         if (name == PitchName.C) Pitch(register - 1, PitchName.B, accidental)
-        else copy(name = PitchName.values()[name.ordinal - 1])
+        else copy(name = PitchName.values()[name.diatonicStep - 1])
 
     override fun toString(): String = "$name$register$accidental"
 
-    val diatonicStep = register * 7 + name.ordinal
+    val diatonicStep get() = register * 7 + name.diatonicStep
+
+    val chromaticStep get() = register * 12 + name.chromaticStep
 
     operator fun minus(p: Pitch): Int = diatonicStep - p.diatonicStep
 
@@ -168,8 +173,8 @@ data class Pitch(val register: Int, val name: PitchName, val accidental: Acciden
     }
 }
 
-enum class Dynamic {
-    PPP, PP, P, MP, MF, F, FF, FFF;
+enum class Dynamic(val velocity: Int) {
+    PPP(8), PP(22), P(36), MP(47), MF(64), F(85), FF(104), FFF(127);
 
     override fun toString(): String = name.lowercase()
 }
@@ -187,6 +192,7 @@ sealed interface Element {
     var startDynamic: Dynamic?
     var customY: Double?
     val end: Time
+    val pitch: Pitch? get() = null
 
     fun copyFrom(original: Element) {
         instrument = original.instrument
@@ -261,7 +267,7 @@ sealed interface Element {
 
 sealed interface PitchedElement : Element {
     override val type: Type<PitchedElement>
-    var pitch: Pitch
+    override var pitch: Pitch
 
     override fun copyFrom(original: Element) {
         if (original is PitchedElement) pitch = original.pitch

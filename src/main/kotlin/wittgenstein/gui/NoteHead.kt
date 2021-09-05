@@ -8,6 +8,14 @@ import wittgenstein.NoteHeadType
 import wittgenstein.gui.impl.NodeWrapper
 
 class NoteHead(val element: Element? = null) : NodeWrapper<Shape>(), SelectableElement {
+    var noteHeadType = NoteHeadType.Regular
+        set(value) {
+            field = value
+            val node = createShape(value)
+            node.fill = this.fill
+            setRoot(node)
+        }
+
     var x by this::layoutX
     var y by this::layoutY
 
@@ -22,7 +30,7 @@ class NoteHead(val element: Element? = null) : NodeWrapper<Shape>(), SelectableE
 
     init {
         isFocusTraversable = true
-        setNoteHeadType(NoteHeadType.Regular)
+        noteHeadType = NoteHeadType.Regular
         regular()
     }
 
@@ -43,12 +51,6 @@ class NoteHead(val element: Element? = null) : NodeWrapper<Shape>(), SelectableE
                 if (value) select() else regular()
             }
         }
-
-    fun setNoteHeadType(headType: NoteHeadType) {
-        val node = createShape(headType)
-        node.fill = this.fill
-        setRoot(node)
-    }
 
     private fun createShape(headType: NoteHeadType): Shape = when (headType) {
         NoteHeadType.Regular -> Ellipse(10.0, 7.0).apply {
@@ -78,6 +80,9 @@ class NoteHead(val element: Element? = null) : NodeWrapper<Shape>(), SelectableE
         )
         NoteHeadType.Slashed -> Line(-10.0, 0.0, 20.0, 15.0)
     }
+
+    override fun toString(): String =
+        "NoteHead [ type = $noteHeadType, fill = $fill, scale = $scaleX, selected = $isSelected ]"
 
     companion object {
         fun leftParentheses() = QuadCurve(7.0, 0.0, 0.0, 10.0, 7.0, 20.0).apply {

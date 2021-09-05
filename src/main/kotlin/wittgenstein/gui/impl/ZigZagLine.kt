@@ -28,4 +28,7 @@ class ZigZagLine(private val verticalDiff: Double) : Polyline(), ILine {
             points.addAll(x + startX.value, y)
         }
     }
+
+    override fun toString(): String =
+        "ZigZagLine [ startX = ${startX.value}, startY = ${startY.value}, endX = ${endX.value}, endY = ${endY.value} ]"
 }

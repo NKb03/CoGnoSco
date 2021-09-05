@@ -1,12 +1,12 @@
 package wittgenstein.gui
 
 import javafx.application.Application
+import javafx.application.Platform
 import javafx.scene.Node
 import javafx.scene.Scene
 import javafx.scene.control.Alert.AlertType.ERROR
 import javafx.scene.control.Button
 import javafx.scene.control.ScrollPane
-import javafx.scene.control.ScrollPane.ScrollBarPolicy
 import javafx.scene.input.KeyCombination
 import javafx.scene.layout.HBox
 import javafx.scene.layout.VBox
@@ -33,13 +33,13 @@ import wittgenstein.gui.impl.loadImage
 import wittgenstein.gui.impl.show
 import wittgenstein.lily.TypesettingException
 import wittgenstein.lily.typeset
+import wittgenstein.midi.Pulsator
+import wittgenstein.midi.RTMidiOutput
+import wittgenstein.midi.play
 import java.io.File
 import java.security.PrivilegedActionException
-import java.util.logging.ConsoleHandler
-import java.util.logging.FileHandler
-import java.util.logging.Level
-import java.util.logging.Logger
 import java.util.stream.Stream
+import javax.sound.midi.MidiSystem
 import kotlin.concurrent.thread
 
 class App : Application() {
@@ -51,6 +51,8 @@ class App : Application() {
     private lateinit var instrumentSelector: InstrumentSelector
     private lateinit var dynamicSelector: DynamicSelector
     private lateinit var scoreView: ScoreView
+    private val pulsator = Pulsator().realtime(16)
+    private val midiOutput = RTMidiOutput(MidiSystem.getSynthesizer(), pulsator)
     private var defaultFile: File? = null
         set(value) {
             field = value
@@ -67,6 +69,11 @@ class App : Application() {
         val layout = layout()
         Shortcuts.listen(layout, this::handleShortcut)
         handleActions()
+        pulsator.addListener {
+            Platform.runLater {
+                scoreView.setCurrentPulse(pulsator.pulse)
+            }
+        }
         stage.title = "Wittgenstein - Neue Datei"
         addIcons()
         stage.scene = Scene(layout)
@@ -177,15 +184,15 @@ class App : Application() {
         val name = file.nameWithoutExtension
         val ly = dir.resolve("$name.ly")
         val score = scoreView.getScore()
-        typeset(score, ly)
         thread(isDaemon = true) {
+            typeset(score, ly)
             run("lilypond", "$name.ly", wait = true)
             run("okular", "--unique", "$name.pdf", wait = false)
         }.setUncaughtExceptionHandler { _, exc -> handleUncaughtException(exc) }
     }
 
-    private fun play() {
-        TODO("Not yet implemented")
+    private fun play() = thread(isDaemon = true) {
+        midiOutput.play(scoreView.getScore())
     }
 
     private fun layout(): VBox = VBox(

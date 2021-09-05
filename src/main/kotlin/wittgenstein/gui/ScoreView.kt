@@ -17,6 +17,8 @@ import wittgenstein.gui.Shortcuts.LEFT
 import wittgenstein.gui.Shortcuts.RIGHT
 import wittgenstein.gui.Shortcuts.UP
 import wittgenstein.gui.impl.*
+import wittgenstein.midi.PULSES_PER_BEAT
+import wittgenstein.midi.Pulsator
 import kotlin.properties.Delegates
 
 class ScoreView(
@@ -31,6 +33,7 @@ class ScoreView(
     private val accidentalViews = mutableMapOf<Element, AccidentalView>()
     private val trillAccidentalViews = mutableMapOf<Trill, AccidentalView>()
     private val startDynamics = mutableMapOf<Element, DynamicView>()
+    private val pulseLine = createPulseLine()
 
     private var disposition: Disposition by Delegates.observable(Pointer()) { _, old, new ->
         old.replaced(new)
@@ -72,7 +75,7 @@ class ScoreView(
         val y = (ev.y.toInt() + 12) / PITCH_H * PITCH_H.toDouble()
         return Pair(x, y.coerceIn(PITCH_H.toDouble(), H - PITCH_H))
     }
-    
+
     private fun addVerticalLines() {
         for (i in 1..(W / BEAT_W)) {
             val l = Line(i * BEAT_W.toDouble(), 0.0, i * BEAT_W.toDouble(), H)
@@ -81,6 +84,15 @@ class ScoreView(
             l.stroke = Color.gray(g)
             children.add(l)
         }
+    }
+
+    private fun createPulseLine() = Line().apply{
+        endY = H
+        stroke = Color.DODGERBLUE
+        strokeWidth = 4.0
+        endXProperty().bind(startXProperty())
+        visibleProperty().bind(startXProperty().isNotEqualTo(0))
+        children.add(this)
     }
 
     fun handleShortcut(shortcut: KeyCombination) {
@@ -110,7 +122,7 @@ class ScoreView(
     private fun addElement(element: Element) {
         val head = NoteHead(element)
         head.x = element.start.toXCoordinate()
-        head.setNoteHeadType(element.type.noteHeadType)
+        head.noteHeadType = element.type.noteHeadType
         noteHeads[element] = head
         val dynamic = DynamicView(head.xProperty(), head.yProperty(), element::startDynamic, element::start)
         add(element, head, dynamic)
@@ -174,7 +186,6 @@ class ScoreView(
         add(trill, littleHead, accidental, lp, rp, connector)
     }
 
-
     fun openScore(score: GraphicalScore) {
         clearScore()
         for (el in score.elements) {
@@ -183,6 +194,10 @@ class ScoreView(
     }
 
     fun getScore() = GraphicalScore(elements)
+
+    fun setCurrentPulse(pulse: Int) {
+        pulseLine.startXProperty().value = (pulse.toDouble() / PULSES_PER_BEAT) * BEAT_W
+    }
 
     private abstract inner class Disposition {
         open fun init(old: Disposition) {}
@@ -220,10 +235,10 @@ class ScoreView(
         override fun accidentalChanged(acc: Accidental) = withElement { element, head ->
             if (element is Trill && head.scaleX == SECONDARY_PITCH_SCALE) {
                 element.secondaryPitch = element.secondaryPitch
-                trillAccidentalViews.getValue(element).setAccidental(acc)
+                trillAccidentalViews.getValue(element).accidental = acc
             } else if (element is PitchedElement) {
                 element.pitch = element.pitch.copy(accidental = acc)
-                accidentalViews.getValue(element).setAccidental(acc)
+                accidentalViews.getValue(element).accidental = acc
             }
         }
 
@@ -269,7 +284,8 @@ class ScoreView(
 
         private fun moveUp() = withElement { element, head ->
             when {
-                element is Trill && head.scaleX == SECONDARY_PITCH_SCALE -> element.secondaryPitch = element.secondaryPitch!!.up()
+                element is Trill && head.scaleX == SECONDARY_PITCH_SCALE -> element.secondaryPitch =
+                    element.secondaryPitch!!.up()
                 element is PitchedElement -> element.pitch = element.pitch.up()
                 else -> element.customY = element.customY!! - PITCH_H
             }
@@ -361,7 +377,7 @@ class ScoreView(
 
         override fun init(old: Disposition) {
             val type = elementTypeSelector.selected.value
-            if (type != null) phantomHead.setNoteHeadType(type.noteHeadType)
+            if (type != null) phantomHead.noteHeadType = type.noteHeadType
             children.addAll(phantomHead, phantomAccidental)
             phantomHead.isVisible = false
         }
@@ -372,7 +388,7 @@ class ScoreView(
         }
 
         override fun elementTypeChanged(type: Element.Type<*>) {
-            phantomHead.setNoteHeadType(type.noteHeadType)
+            phantomHead.noteHeadType = type.noteHeadType
         }
 
         override fun mouseEntered(ev: MouseEvent) {
@@ -416,7 +432,7 @@ class ScoreView(
             Pitch.fromDiatonicStep(52 - y.toInt() / PITCH_H, accidentalSelector.selected.value)
 
         override fun accidentalChanged(acc: Accidental) {
-            phantomAccidental.setAccidental(acc)
+            phantomAccidental.accidental = acc
         }
     }
 
@@ -527,7 +543,7 @@ class ScoreView(
 
         override fun accidentalChanged(acc: Accidental) {
             trill.secondaryPitch = trill.secondaryPitch!!.copy(accidental = acc)
-            littleAccidental.setAccidental(acc)
+            littleAccidental.accidental = acc
         }
 
         override fun deleteElement() {

@@ -19,4 +19,6 @@ abstract class NodeWrapper<R: Node> : Control() {
             override fun dispose() {}
         }
     }
+
+    override fun toString(): String = "NodeWrapper [ root = $root ]"
 }

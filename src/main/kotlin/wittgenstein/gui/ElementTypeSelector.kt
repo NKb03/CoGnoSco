@@ -15,7 +15,7 @@ class ElementTypeSelector : SelectorBar<Element.Type<*>?>(listOf(null), continuo
         if (option == POINTER) return loadImage("pointer.png").view().fitHeight(30.0)
         val pane = Pane()
         val head = NoteHead()
-        head.setNoteHeadType(option.noteHeadType)
+        head.noteHeadType = option.noteHeadType
         pane.children.add(head)
         if (option is ContinuousElement.Type<*>) {
             val shape = if (option == Trill) ZigZagLine(3.0) else LineAdapter()
