@@ -105,7 +105,7 @@ private fun LilypondWriter.typesetPart(staff: Staff, part: Part, score: Score) =
 }
 
 private fun LilypondWriter.typesetScore(score: Score) {
-    include("preamble.ly")
+    include("preamble.ily")
     for (staff in score.orchestra.staffs) {
         val part = score.parts.getValue(staff)
         val name = staff.partName()

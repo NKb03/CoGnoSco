@@ -1,8 +1,10 @@
 package wittgenstein.gui
 
 import javafx.beans.value.ObservableValue
+import javafx.geometry.Insets
 import javafx.scene.Node
 import javafx.scene.control.Button
+import javafx.scene.control.ToggleButton
 import javafx.scene.image.ImageView
 import javafx.scene.layout.HBox
 import wittgenstein.Accidental
@@ -18,8 +20,7 @@ class AccidentalSelector : HBox(5.0) {
 
     val selected: ObservableValue<Accidental> =
         binding(regularAccidentalSelector.selected, pitchBendSelector.selected) { acc: RegularAccidental?, bend: Int? ->
-            val adjust = centToAdjustment(bend ?: 0)
-            makeMicroTonalAccidental(adjust, acc ?: RegularAccidental.Natural)
+            makeMicroTonalAccidental(acc ?: RegularAccidental.Natural, bend ?: 0)
         }
 
     init {
@@ -33,59 +34,22 @@ class AccidentalSelector : HBox(5.0) {
         resultView.fitHeight = 30.0
         resultView.isSmooth = true
         val container = Button(null, resultView)
-        container.prefHeight = 40.0
-        container.prefWidth = 40.0
+        container.prefWidth = 45.0
         return container
     }
 
     fun select(value: Accidental) {
-        when (value) {
-            QuarterToneAccidental.QuarterFlat -> {
-                regularAccidentalSelector.select(RegularAccidental.Natural)
-                selectBend(-50)
-            }
-            QuarterToneAccidental.QuarterSharp -> {
-                regularAccidentalSelector.select(RegularAccidental.Natural)
-                selectBend(+50)
-            }
-            QuarterToneAccidental.TreeQuarterFlat -> {
-                regularAccidentalSelector.select(RegularAccidental.Flat)
-                selectBend(-50)
-            }
-            QuarterToneAccidental.TreeQuarterSharp -> {
-                regularAccidentalSelector.select(RegularAccidental.Sharp)
-                selectBend(+50)
-            }
-            RegularAccidental.Natural -> {
-                regularAccidentalSelector.select(RegularAccidental.Natural)
-                selectBend(0)
-            }
-            RegularAccidental.Flat -> {
-                regularAccidentalSelector.select(RegularAccidental.Flat)
-                selectBend(0)
-            }
-            RegularAccidental.Sharp -> {
-                regularAccidentalSelector.select(RegularAccidental.Sharp)
-            }
-            is BendedAccidental -> {
-                regularAccidentalSelector.select(value.reference)
-                when (value.adjust) {
-                    -2 -> selectBend(-31)
-                    -1 -> selectBend(-13)
-                    0 -> selectBend(+-0)
-                    +1 -> selectBend(+13)
-                    +2 -> selectBend(+31)
-                }
-            }
-        }
-    }
-
-    private fun selectBend(value: Int) {
-        pitchBendSelector.select(value)
+        regularAccidentalSelector.select(value.reference)
+        pitchBendSelector.select(value.bend)
     }
 
     class RegularAccidentalSelector : SelectorBar<RegularAccidental>(RegularAccidental.values().asList()) {
         override fun extractGraphic(option: RegularAccidental): Node = loadImage(option).view().fitHeight(30.0)
+
+        override fun ToggleButton.extraConfig(option: RegularAccidental) {
+            prefWidth = 45.0
+            prefHeight = 40.0
+        }
     }
 
     class StandardBendSelector : SelectorBar<Int>(STANDARD_BENDS) {
@@ -95,30 +59,19 @@ class AccidentalSelector : HBox(5.0) {
     companion object {
         private val STANDARD_BENDS = listOf(-50, -31, -13, 0, +13, +31, +50)
 
-        private fun centToAdjustment(bend: Int) = when (bend) {
-            in -60..-40 -> -3
-            in -39..-25 -> -2
-            in -24..-6 -> -1
-            in -5..+5 -> 0
-            in 6..24 -> 1
-            in 25..39 -> 2
-            in 40..60 -> 3
-            else -> error("pitch bend out of range: $bend")
-        }
-
-        private fun makeMicroTonalAccidental(adjust: Int, acc: RegularAccidental) = when (adjust) {
-            0 -> acc
-            -3 -> when (acc) {
+        private fun makeMicroTonalAccidental(reference: RegularAccidental, bend: Int) = when (bend) {
+            0 -> reference
+            -50 -> when (reference) {
                 RegularAccidental.Natural -> QuarterToneAccidental.QuarterFlat
                 RegularAccidental.Flat -> QuarterToneAccidental.TreeQuarterFlat
                 RegularAccidental.Sharp -> QuarterToneAccidental.QuarterSharp
             }
-            3 -> when (acc) {
+            +50 -> when (reference) {
                 RegularAccidental.Natural -> QuarterToneAccidental.QuarterSharp
                 RegularAccidental.Flat -> QuarterToneAccidental.QuarterFlat
                 RegularAccidental.Sharp -> QuarterToneAccidental.TreeQuarterSharp
             }
-            else -> BendedAccidental(acc, adjust)
+            else -> BendedAccidental(reference, bend)
         }
 
         private fun Int.toStringSigned() = when {

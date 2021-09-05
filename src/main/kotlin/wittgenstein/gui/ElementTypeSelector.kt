@@ -3,9 +3,8 @@ package wittgenstein.gui
 import javafx.geometry.Insets
 import javafx.scene.Node
 import javafx.scene.control.ToggleButton
+import javafx.scene.layout.BorderPane
 import javafx.scene.layout.Pane
-import javafx.scene.shape.Line
-import javafx.scene.shape.Polyline
 import wittgenstein.ContinuousElement
 import wittgenstein.Element
 import wittgenstein.Trill
@@ -13,11 +12,11 @@ import wittgenstein.gui.impl.*
 
 class ElementTypeSelector : SelectorBar<Element.Type<*>?>(listOf(null), continuousElementTypes, discreteElementTypes) {
     override fun extractGraphic(option: Element.Type<*>?): Node {
-        if (option == null) return loadImage("pointer.png").view().fitHeight(30.0)
-        val layout = Pane()
+        if (option == POINTER) return loadImage("pointer.png").view().fitHeight(30.0)
+        val pane = Pane()
         val head = NoteHead()
         head.setNoteHeadType(option.noteHeadType)
-        layout.children.add(head)
+        pane.children.add(head)
         if (option is ContinuousElement.Type<*>) {
             val shape = if (option == Trill) ZigZagLine(3.0) else LineAdapter()
             shape.endXProperty().set(35.0)
@@ -25,16 +24,21 @@ class ElementTypeSelector : SelectorBar<Element.Type<*>?>(listOf(null), continuo
             shape.strokeWidth = 3.0
             shape.layoutX = head.root.prefWidth(-1.0)
             shape.layoutY = head.root.prefHeight(-1.0) / 2
-            layout.children.add(shape)
+            pane.children.add(shape)
         }
+        val layout = BorderPane(pane)
+        val h = 0.0
+        val v = (27 - head.prefHeight(-1.0)) / 1.5
+        layout.padding = Insets(v, h, v, h)
         return layout
     }
 
     override fun extractDescription(option: Element.Type<*>?): String? = option?.description
 
     override fun ToggleButton.extraConfig(option: Element.Type<*>?) {
-        if (option == null) {
-            padding = Insets(5.0, 10.0, 5.0, 10.0)
+        if (option == POINTER) {
+            prefHeight = 40.0
+            prefWidth = 45.0
         }
     }
 

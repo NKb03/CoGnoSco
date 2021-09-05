@@ -55,14 +55,14 @@ class NoteHead(val element: Element? = null) : NodeWrapper<Shape>(), SelectableE
             rotate = -16.0
         }
         NoteHeadType.Triangle -> Polygon(
-            0.0, 16.0,
+            0.0, 14.0,
             10.0, 0.0,
-            20.0, 16.0
+            20.0, 14.0
         )
         NoteHeadType.Rectangle -> Rectangle(22.0, 16.3)
         NoteHeadType.Rhombus -> Polygon(
-            0.0, 8.0,
-            12.5, 16.0,
+            0.0, 7.0,
+            12.5, 14.0,
             25.0, 8.0,
             12.5, 0.0
         )

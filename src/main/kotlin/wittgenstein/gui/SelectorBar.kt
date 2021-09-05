@@ -42,9 +42,7 @@ abstract class SelectorBar<T>(vararg options: List<T>) : HBox(10.0) {
             map[option] = btn
             btn.userData = option
             btn.tooltip = this.extractDescription(option)?.let(::Tooltip)
-            val h = 7.0
-            val v = if (btn.graphic != null) (35 - btn.graphic.prefHeight(-1.0)) / 2 else 10.0
-            btn.padding = Insets(v, h, v, h)
+            if (btn.graphic == null) btn.padding = Insets(11.0)
             @Suppress("LeakingThis")
             btn.extraConfig(option)
             seg.buttons.add(btn)

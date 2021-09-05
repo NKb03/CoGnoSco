@@ -21,3 +21,7 @@
 .idea/**/libraries
 *.iws
 .idea/replstate.xml
+
+*.pdf
+*.wtg.json
+*.ly

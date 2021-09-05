@@ -66,6 +66,9 @@ enum class PitchName {
 
 @Serializable(with = Accidental.Serializer::class)
 sealed interface Accidental {
+    val reference: RegularAccidental
+    val bend: Int
+
     object Serializer : KSerializer<Accidental> {
         override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("accidental", PrimitiveKind.STRING)
 
@@ -85,6 +88,12 @@ sealed interface Accidental {
 enum class RegularAccidental : Accidental {
     Natural, Flat, Sharp;
 
+    override val reference: RegularAccidental
+        get() = this
+
+    override val bend: Int
+        get() = 0
+
     override fun toString(): String = when (this) {
         Natural -> "n"
         Flat -> "f"
@@ -96,8 +105,11 @@ enum class RegularAccidental : Accidental {
     }
 }
 
-enum class QuarterToneAccidental : Accidental {
-    QuarterFlat, QuarterSharp, TreeQuarterFlat, TreeQuarterSharp;
+enum class QuarterToneAccidental(override val reference: RegularAccidental, override val bend: Int) : Accidental {
+    QuarterFlat(RegularAccidental.Natural, -50),
+    QuarterSharp(RegularAccidental.Natural, +50),
+    TreeQuarterFlat(RegularAccidental.Flat, -50),
+    TreeQuarterSharp(RegularAccidental.Sharp, +50);
 
     override fun toString(): String = when (this) {
         QuarterFlat -> "qf"
@@ -112,10 +124,22 @@ enum class QuarterToneAccidental : Accidental {
 }
 
 @Serializable
-data class BendedAccidental(val reference: RegularAccidental, val adjust: Int) : Accidental {
+data class BendedAccidental(override val reference: RegularAccidental, override val bend: Int) : Accidental {
     override fun toString(): String {
-        val suff = "u".repeat(adjust.coerceAtLeast(0)) + "d".repeat((-adjust).coerceAtLeast(0))
+        val arr = centToArrows(bend)
+        val suff = "u".repeat(arr.coerceAtLeast(0)) + "d".repeat((-arr).coerceAtLeast(0))
         return "$reference$suff"
+    }
+
+    companion object {
+        private fun centToArrows(bend: Int) = when (bend) {
+            in -39..-25 -> -2
+            in -24..-6 -> -1
+            in -5..+5 -> 0
+            in 6..24 -> 1
+            in 25..39 -> 2
+            else -> error("pitch bend out of range: $bend")
+        }
     }
 }
 
@@ -320,7 +344,7 @@ class SimplePitchedContinuousElement(
 
     object Regular : Type("reg", "durchgehaltener Ton")
 
-    object FastRepeat : Type("fast_rep", "") {
+    object FastRepeat : Type("fastrep", "schnelle Tonwiederholung (bei Bläsern Flatterzunge, bei Streichern Tremolo)") {
         override val strokeDashArray: List<Double>
             get() = listOf(0.0, 7.0)
     }

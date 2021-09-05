@@ -5,6 +5,8 @@ import javafx.scene.Node
 import javafx.scene.Scene
 import javafx.scene.control.Alert.AlertType.ERROR
 import javafx.scene.control.Button
+import javafx.scene.control.ScrollPane
+import javafx.scene.control.ScrollPane.ScrollBarPolicy
 import javafx.scene.input.KeyCombination
 import javafx.scene.layout.HBox
 import javafx.scene.layout.VBox
@@ -73,8 +75,6 @@ class App : Application() {
     }
 
     private fun setExceptionHandler() {
-        logger.addHandler(ConsoleHandler())
-        logger.addHandler(FileHandler("log.txt"))
         Thread.currentThread().setUncaughtExceptionHandler { _, exc -> handleUncaughtException(exc) }
     }
 
@@ -94,7 +94,7 @@ class App : Application() {
             is TypesettingException -> ERROR.show(msg)
             else -> ERROR.show("Unerwarteter Fehler: '${msg}', see log.")
         }
-        logger.log(Level.SEVERE, msg, exc)
+        exc.printStackTrace()
     }
 
     private fun addIcons() {
@@ -148,7 +148,7 @@ class App : Application() {
 
     private fun save(): File? {
         var file = defaultFile ?: fileChooser.showSaveDialog(stage) ?: return null
-        if (file.extension.isEmpty()) file = file.parentFile.resolve("${file.name}.json")
+        if (file.extension.isEmpty()) file = file.parentFile.resolve("${file.name}.wtg.json")
         val score = scoreView.getScore()
         val encoded = score.encodeToString()
         file.writeText(encoded)
@@ -189,24 +189,28 @@ class App : Application() {
     }
 
     private fun layout(): VBox = VBox(
-        30.0,
-        VBox(
-            HBox(10.0, containerButton(actionsBar), containerButton(typeSelector)),
-            HBox(10.0, containerButton(accidentalSelector), containerButton(dynamicSelector)),
+        HBox(
+            10.0,
+            containerButton(actionsBar),
+            containerButton(typeSelector),
+            containerButton(accidentalSelector),
+            containerButton(dynamicSelector),
             containerButton(instrumentSelector)
         ),
-        scoreView
+        HBox(ScoreView.Clefs(), ScrollPane(scoreView).apply {
+            prefWidth = 3000.0
+            prefHeight = scoreView.prefHeight + 20
+        })
     )
 
     private fun setupFileChooser() {
         fileChooser = FileChooser()
-        fileChooser.extensionFilters.add(FileChooser.ExtensionFilter("JSON Files", "*.json"))
+        fileChooser.extensionFilters.add(FileChooser.ExtensionFilter("Wittgenstein JSON files", "*.wtg.json"))
         fileChooser.initialDirectory = File("examples/")
     }
 
     private fun containerButton(content: Node) = Button(null, content).apply {
         isFocusTraversable = false
-        prefHeight = 50.0
     }
 
     override fun stop() {
@@ -225,7 +229,5 @@ class App : Application() {
         fun main(args: Array<String>) {
             launch(App::class.java)
         }
-
-        val logger: Logger = Logger.getLogger(App::class.java.name)
     }
 }

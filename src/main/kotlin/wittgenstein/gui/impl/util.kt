@@ -42,3 +42,5 @@ fun ToggleGroup.dontDeselectAll() {
 fun Alert.AlertType.show(message: String) {
     Platform.runLater { Alert(this, message).show() }
 }
+
+inline fun <reified R: Any> Any.safeCast(block: R.() -> Unit): Unit? = (this as? R)?.block()
