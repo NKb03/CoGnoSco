@@ -16,4 +16,4 @@ fun makeParts(elements: List<Element>, staffs: List<Staff>): Map<Staff, Part> {
     return parts.withIndex().associate { (idx, elems) -> staffs[idx] to Part(elems) }
 }
 
-private fun MutableList<Element>.canBeAdded(element: Element): Boolean = isEmpty() || last().end < element.start
+private fun MutableList<Element>.canBeAdded(element: Element): Boolean = isEmpty() || last().end <= element.start

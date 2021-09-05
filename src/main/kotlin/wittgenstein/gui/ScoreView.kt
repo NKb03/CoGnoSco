@@ -249,7 +249,7 @@ class ScoreView(
                 }
             }
             withDynamic { element ->
-                element.time += 1
+                element.time -= 1
                 element.x -= BEAT_W
             }
         }
@@ -262,7 +262,7 @@ class ScoreView(
                 }
             }
             withDynamic { element ->
-                element.time -= 1
+                element.time += 1
                 element.x += BEAT_W
             }
         }

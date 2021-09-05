@@ -276,7 +276,7 @@ sealed class AbstractElement : Element {
     override var instrument: Instrument? = null
     override var customY: Double? = null
     override val end: Time
-        get() = start
+        get() = start + 1
 
     override fun toString(): String = "$type: $start ($startDynamic)"
 }

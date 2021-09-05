@@ -48,7 +48,7 @@ private fun getTechnique(type: Element.Type<Element>, instrument: Instrument) = 
 private fun ElementTypesetter.typesetElement(element: Element, instrument: Instrument) {
     technique = getTechnique(element.type, instrument)
     val pitch = if (element is PitchedElement) element.pitch else instrument.clef.middleLinePitch!!
-    if (element is Trill) {
+     if (element is Trill) {
         addNote(pitch, "16")
         append("\\trill")
         addDynamic(element.startDynamic!!)
@@ -56,7 +56,20 @@ private fun ElementTypesetter.typesetElement(element: Element, instrument: Instr
         +"\\parenthesize"
         addNote(element.secondaryPitch!!, "16", duration = 0)
     } else {
-        addNote(pitch)
+        val type = if (element is SimplePitchedContinuousElement) {
+            when (element.type) {
+                SimplePitchedContinuousElement.FastRepeat -> {
+                    +"\\repeat tremolo 8"
+                    "64"
+                }
+                SimplePitchedContinuousElement.Repeat -> {
+                    +"\\repeat tremolo 4"
+                    "32"
+                }
+                else -> "8"
+            }
+        } else "8"
+        addNote(pitch, type)
         addDynamic(element.startDynamic!!)
     }
     if (element is ContinuousElement) {
