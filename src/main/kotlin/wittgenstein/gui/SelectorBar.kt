@@ -8,6 +8,8 @@ import javafx.scene.control.ToggleGroup
 import javafx.scene.control.Tooltip
 import javafx.scene.layout.HBox
 import org.controlsfx.control.SegmentedButton
+import wittgenstein.gui.impl.dontDeselectAll
+import wittgenstein.gui.impl.map
 
 abstract class SelectorBar<T>(vararg options: List<T>) : HBox(10.0) {
     protected open fun extractGraphic(option: T): Node? = null
@@ -40,8 +42,9 @@ abstract class SelectorBar<T>(vararg options: List<T>) : HBox(10.0) {
             map[option] = btn
             btn.userData = option
             btn.tooltip = this.extractDescription(option)?.let(::Tooltip)
-            btn.prefHeight = 30.0
-            if (btn.graphic == null) setMargin(seg, Insets(5.0, 0.0, 5.0, 0.0))
+            val h = 7.0
+            val v = if (btn.graphic != null) (35 - btn.graphic.prefHeight(-1.0)) / 2 else 10.0
+            btn.padding = Insets(v, h, v, h)
             @Suppress("LeakingThis")
             btn.extraConfig(option)
             seg.buttons.add(btn)

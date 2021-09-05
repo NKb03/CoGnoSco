@@ -9,21 +9,21 @@ import javafx.scene.text.FontPosture
 import javafx.scene.text.FontWeight
 import javafx.scene.text.Text
 import wittgenstein.Dynamic
-import wittgenstein.Moment
+import wittgenstein.Time
 import kotlin.reflect.KMutableProperty0
 
 class DynamicView(
     referenceX: Property<Number>,
     referenceY: ObservableNumberValue,
     private val dynamicProperty: KMutableProperty0<Dynamic?>,
-    momentProperty: KMutableProperty0<Moment?>,
+    timeProperty: KMutableProperty0<Time>,
 ) : SelectableElement, Text() {
     init {
         font = Font.font("System", FontWeight.BOLD, FontPosture.ITALIC, 12.0)
         text = dynamicProperty.get().toString()
         translateX = (3 - text.length) * 3.0
         xProperty().bindBidirectional(referenceX)
-        yProperty().bind(Bindings.add(referenceY, 30))
+        yProperty().bind(Bindings.add(referenceY, 25))
         isFocusTraversable = true
     }
 
@@ -35,7 +35,7 @@ class DynamicView(
             translateX = (3 - text.length) * 3.0
         }
 
-    var moment: Moment? by momentProperty
+    var time: Time by timeProperty
 
     override var isSelected: Boolean = false
         set(value) {

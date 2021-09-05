@@ -1,16 +1,18 @@
 package wittgenstein.gui
 
+import javafx.beans.property.DoubleProperty
 import javafx.scene.paint.Color
 import javafx.scene.shape.*
 import wittgenstein.Element
 import wittgenstein.NoteHeadType
+import wittgenstein.gui.impl.NodeWrapper
 
 class NoteHead(val element: Element? = null) : NodeWrapper<Shape>(), SelectableElement {
     var x by this::layoutX
     var y by this::layoutY
 
-    fun xProperty() = layoutXProperty()!!
-    fun yProperty() = layoutYProperty()!!
+    fun xProperty(): DoubleProperty = layoutXProperty()
+    fun yProperty(): DoubleProperty = layoutYProperty()
 
     private var fill: Color = Color.BLACK
         set(value) {
@@ -74,6 +76,7 @@ class NoteHead(val element: Element? = null) : NodeWrapper<Shape>(), SelectableE
                 0.0, 12.0
             ).also { it.strokeWidth = 3.0 }
         )
+        NoteHeadType.Slashed -> Line(-10.0, 0.0, 20.0, 15.0)
     }
 
     companion object {

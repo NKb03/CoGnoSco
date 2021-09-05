@@ -1,13 +1,13 @@
-package wittgenstein.gui
+package wittgenstein.gui.impl
 
-import javafx.beans.Observable
-import javafx.beans.property.SimpleObjectProperty
-import javafx.beans.value.ObservableValue
+import javafx.application.Platform
 import javafx.scene.Node
+import javafx.scene.control.Alert
 import javafx.scene.control.ToggleGroup
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
 import wittgenstein.Accidental
+import wittgenstein.gui.App
 
 fun loadImage(acc: Accidental): Image {
     val res = "accidentals/$acc.png"
@@ -33,22 +33,12 @@ fun <N : Node> N.scale(factor: Double): N = also {
     scaleY = factor
 }
 
-
 fun ToggleGroup.dontDeselectAll() {
     selectedToggleProperty().addListener { _, old, new ->
         if (new == null) old.isSelected = true
     }
 }
 
-fun <T> binding(vararg observables: Observable, compute: () -> T): ObservableValue<T> {
-    val p = SimpleObjectProperty<T>()
-    for (obs in observables) {
-        obs.addListener { p.set(compute()) }
-    }
-    return p
+fun Alert.AlertType.show(message: String) {
+    Platform.runLater { Alert(this, message).show() }
 }
-
-fun <T, F> ObservableValue<T>.map(f: (T) -> F): ObservableValue<F> = binding(this) { f(value) }
-
-fun <A, B, F> binding(a: ObservableValue<A>, b: ObservableValue<B>, f: (A, B) -> F): ObservableValue<F> =
-    binding<F>(a, b) { f(a.value, b.value) }

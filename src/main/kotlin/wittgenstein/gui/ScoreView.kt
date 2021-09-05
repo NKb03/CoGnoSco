@@ -16,6 +16,7 @@ import wittgenstein.gui.Shortcuts.ENTER
 import wittgenstein.gui.Shortcuts.LEFT
 import wittgenstein.gui.Shortcuts.RIGHT
 import wittgenstein.gui.Shortcuts.UP
+import wittgenstein.gui.impl.*
 import kotlin.properties.Delegates
 
 class ScoreView(
@@ -108,13 +109,15 @@ class ScoreView(
     }
 
     private fun deleteElement(element: Element) {
+        check(elements.remove(element)) { "cannot remove non-existent element $element" }
         associatedNodes.remove(element)!!.forEach { children.remove(it) }
         noteHeads.remove(element)!!
-        elements.remove(element)
+        accidentalViews.remove(element)!!
+        if (element is Trill) trillAccidentalViews.remove(element)!!
     }
 
     private fun clearScore() {
-        for (el in elements) {
+        for (el in elements.toList()) {
             deleteElement(el)
         }
         elements.clear()
@@ -122,7 +125,7 @@ class ScoreView(
 
     private fun addElement(element: Element) {
         val head = NoteHead(element)
-        head.x = element.start!!.getX()
+        head.x = element.start.toXCoordinate()
         head.setNoteHeadType(element.type.noteHeadType)
         noteHeads[element] = head
         val dynamic = DynamicView(head.xProperty(), head.yProperty(), element::startDynamic, element::start)
@@ -133,16 +136,16 @@ class ScoreView(
             accidentalViews[element] = accidental
             add(element, accidental)
         } else {
-            head.y = element.customY!!
+            head.y = element.customY ?: error("no custom-y")
         }
-        if (element is ContinuousElement && element.climax != null && element.end != null) {
+        if (element is ContinuousElement && element.climax != 0 && element.end != 0) {
             val line = createDurationLine(element, head)
-            val climaxX = SimpleDoubleProperty(element.climax!!.getX())
+            val climaxX = SimpleDoubleProperty(element.climax.toXCoordinate())
             val climax = DynamicView(climaxX, head.yProperty(), element::climaxDynamic, element::climax)
-            val endX = SimpleDoubleProperty(element.end!!.getX())
+            val endX = SimpleDoubleProperty(element.end.toXCoordinate())
             val end = DynamicView(endX, head.yProperty(), element::endDynamic, element::end)
             line.endXProperty().bind(Bindings.add(end.xProperty(), 10))
-            add(element, line, climax, end)
+            add(element, line.shape, climax, end)
         }
         if (element is Trill && element.secondaryPitch != null) {
             val littleHead = NoteHead(element).scale(0.6)
@@ -152,13 +155,13 @@ class ScoreView(
         elements.add(element)
     }
 
-    private fun createDurationLine(element: ContinuousElement, head: NoteHead): Line {
-        val line = Line()
+    private fun createDurationLine(element: ContinuousElement, head: NoteHead): ILine {
+        val line = if (element.type == Trill) ZigZagLine(3.0) else LineAdapter()
         line.startXProperty().bind(Bindings.add(head.xProperty(), 15))
         line.startYProperty().bind(Bindings.add(head.yProperty(), 8))
         line.endYProperty().bind(Bindings.add(head.yProperty(), 8))
-        line.strokeWidth = 5.0
-        line.strokeDashArray.addAll(element.type.strokeDashArray.orEmpty())
+        line.strokeWidth = if (element.type == Trill) 3.0 else 5.0
+        line.strokeDashArray.addAll(element.type.strokeDashArray)
         return line
     }
 
@@ -170,7 +173,8 @@ class ScoreView(
         littleHead.xProperty().bind(binding(littleHead.yProperty(), head.yProperty(), head.xProperty()) {
             if (littleHead.y == head.y + 1) head.x + 35 else head.x + 15
         })
-        littleHead.y = head.y + 1
+        val steps = trill.secondaryPitch!! - trill.pitch
+        littleHead.y = head.y + steps * 25 + 1
         lp.layoutXProperty().bind(accidental.xProperty().subtract(10))
         rp.layoutXProperty().bind(littleHead.xProperty().add(2))
         lp.layoutYProperty().bind(littleHead.yProperty().subtract(4))
@@ -187,14 +191,14 @@ class ScoreView(
     }
 
 
-    fun openScore(score: Score) {
+    fun openScore(score: GraphicalScore) {
         clearScore()
         for (el in score.elements) {
             addElement(el)
         }
     }
 
-    fun getScore() = Score(elements)
+    fun getScore() = GraphicalScore(elements)
 
     private abstract inner class Disposition {
         open fun init(old: Disposition) {}
@@ -232,10 +236,10 @@ class ScoreView(
         override fun accidentalChanged(acc: Accidental) = withElement { element, head ->
             if (element is Trill && head.scaleX == 0.6) {
                 element.secondaryPitch = element.secondaryPitch
-                trillAccidentalViews[element]!!.setAccidental(acc)
+                trillAccidentalViews.getValue(element).setAccidental(acc)
             } else if (element is PitchedElement) {
                 element.pitch = element.pitch.copy(accidental = acc)
-                accidentalViews[element]!!.setAccidental(acc)
+                accidentalViews.getValue(element).setAccidental(acc)
             }
         }
 
@@ -256,12 +260,12 @@ class ScoreView(
         private fun moveLeft() {
             withElement { element, head ->
                 if (head.scaleX == 1.0) {
-                    element.start = element.start?.prev()
+                    element.start -= 1
                     head.x -= 20
                 }
             }
             withDynamic { element ->
-                element.moment = element.moment?.prev()
+                element.time += 1
                 element.x -= 20
             }
         }
@@ -269,12 +273,12 @@ class ScoreView(
         private fun moveRight() {
             withElement { element, head ->
                 if (head.scaleX == 1.0) {
-                    element.start = element.start?.next()
+                    element.start += 1
                     head.x += 20
                 }
             }
             withDynamic { element ->
-                element.moment = element.moment?.next()
+                element.time -= 1
                 element.x += 20
             }
         }
@@ -372,7 +376,8 @@ class ScoreView(
         }
 
         override fun init(old: Disposition) {
-            phantomHead.setNoteHeadType(elementTypeSelector.selected.value!!.noteHeadType)
+            val type = elementTypeSelector.selected.value
+            if (type != null) phantomHead.setNoteHeadType(type.noteHeadType)
             children.addAll(phantomHead, phantomAccidental)
             phantomHead.isVisible = false
         }
@@ -404,8 +409,9 @@ class ScoreView(
         override fun mouseClicked(ev: MouseEvent) {
             val (x, y) = normalizeCoords(ev)
             val element = elementTypeSelector.selected.value?.createElement() ?: return
-            element.start = getMoment(x)
+            element.start = getTime(x)
             element.startDynamic = dynamicsSelector.selected.value
+            element.instrument = instrumentSelector.selected.value
             if (element is PitchedElement) element.pitch = getPitch(y)
             else element.customY = y - 8
             addElement(element)
@@ -422,12 +428,8 @@ class ScoreView(
             }
         }
 
-        private fun getPitch(y: Double): Pitch {
-            val step = 52 - y.toInt() / 25
-            val register = step / 7
-            val pitchName = PitchName.values()[step % 7]
-            return Pitch(register, pitchName, accidentalSelector.selected.value)
-        }
+        private fun getPitch(y: Double): Pitch =
+            Pitch.fromDiatonicStep(52 - y.toInt() / 25, accidentalSelector.selected.value)
 
         override fun accidentalChanged(acc: Accidental) {
             phantomAccidental.setAccidental(acc)
@@ -442,8 +444,8 @@ class ScoreView(
 
         override fun init(old: Disposition) {
             head.inCreation()
-            add(element, line)
-            line.endX = minX
+            add(element, line.shape)
+            line.endXProperty().set(minX)
         }
 
         override fun withElement(block: (element: Element, head: NoteHead) -> Unit) {
@@ -464,14 +466,14 @@ class ScoreView(
             var (x, _) = normalizeCoords(ev)
             x = x.coerceAtLeast(minX)
             val xProp = SimpleDoubleProperty(x)
-            if (element.climax == null) {
-                element.climax = getMoment(x)
+            if (element.climax == 0) {
+                element.climax = getTime(x)
                 element.climaxDynamic = dynamicsSelector.selected.value
                 val dynamic = DynamicView(xProp, head.yProperty(), element::climaxDynamic, element::climax)
                 add(element, dynamic)
                 minX = x + 20
             } else {
-                element.end = getMoment(x)
+                element.end = getTime(x)
                 element.endDynamic = dynamicsSelector.selected.value
                 val dynamic = DynamicView(xProp, head.yProperty(), element::endDynamic, element::end)
                 line.endXProperty().bind(dynamic.xProperty())
@@ -487,7 +489,7 @@ class ScoreView(
 
         override fun mouseMoved(ev: MouseEvent) {
             val (x, _) = normalizeCoords(ev)
-            line.endX = x.coerceAtLeast(minX)
+            line.endXProperty().set(x.coerceAtLeast(minX))
         }
 
         override fun accidentalChanged(acc: Accidental) {
@@ -550,14 +552,14 @@ class ScoreView(
     }
 
     companion object {
-        private fun getMoment(x: Double) = Moment(x.toInt() / 40 - 10, (x.toInt() / 20) % 2)
-
-        private fun Pitch.getY(): Double {
-            val step = register * 7 + name.ordinal
-            return (52 - step) * 25.0 - 8
+        private fun getTime(x: Double): Time {
+            val time = (x.toInt() - 200) / 20
+            return time
         }
 
-        private fun Moment.getX(): Double = bar * 40.0 + beat * 20.0 + 400.0
+        private fun Pitch.getY(): Double = (52 - diatonicStep) * 25.0 - 8
+
+        private fun Time.toXCoordinate(): Double = this * 20.0 + 200
 
         private fun findSelectableElement(target: EventTarget?): SelectableElement? = when (target) {
             is SelectableElement -> target

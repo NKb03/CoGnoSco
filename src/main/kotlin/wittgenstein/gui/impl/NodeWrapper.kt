@@ -1,4 +1,4 @@
-package wittgenstein.gui
+package wittgenstein.gui.impl
 
 import javafx.scene.Node
 import javafx.scene.control.Control

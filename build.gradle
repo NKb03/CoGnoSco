@@ -19,6 +19,13 @@ repositories {
 
 mainClassName = 'wittgenstein.gui.App'
 
+compileKotlin {
+    kotlinOptions {
+        freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
+        jvmTarget = '11'
+    }
+}
+
 dependencies {
     compile 'org.jetbrains.kotlin:kotlin-stdlib'
     compile 'org.jetbrains.kotlin:kotlin-reflect'

@@ -3,6 +3,8 @@ package wittgenstein.gui
 import javafx.beans.binding.Bindings
 import javafx.scene.image.ImageView
 import wittgenstein.Accidental
+import wittgenstein.gui.impl.fitHeight
+import wittgenstein.gui.impl.loadImage
 
 class AccidentalView(
     acc: Accidental,

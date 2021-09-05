@@ -9,6 +9,7 @@ import wittgenstein.Accidental
 import wittgenstein.BendedAccidental
 import wittgenstein.QuarterToneAccidental
 import wittgenstein.RegularAccidental
+import wittgenstein.gui.impl.*
 
 class AccidentalSelector : HBox(5.0) {
     val regularAccidentalSelector = RegularAccidentalSelector()
