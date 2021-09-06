@@ -30,6 +30,7 @@ import wittgenstein.gui.Shortcuts.TYPESET
 import wittgenstein.gui.impl.loadImage
 import wittgenstein.gui.impl.show
 import wittgenstein.WittgensteinException
+import wittgenstein.gui.Shortcuts.NEW
 import wittgenstein.lily.typeset
 import wittgenstein.midi.Pulsator
 import wittgenstein.midi.RTMidiOutput
@@ -122,6 +123,7 @@ class App : Application() {
         actionsBar.setOnAction(Action.Save, ::save)
         actionsBar.setOnAction(Action.Play, ::play)
         actionsBar.setOnAction(Action.Typeset, ::typeset)
+        actionsBar.setOnAction(Action.New, ::new)
     }
 
     private fun handleShortcut(shortcut: KeyCombination) {
@@ -145,10 +147,16 @@ class App : Application() {
             SELECT_BEND -> accidentalSelector.pitchBendSelector.receiveFocus()
             OPEN -> open()
             SAVE -> save()
+            NEW -> new()
             PLAY -> play()
             TYPESET -> typeset()
             else -> scoreView.handleShortcut(shortcut)
         }
+    }
+
+    private fun new() {
+        scoreView.clearScore()
+        defaultFile = null
     }
 
     private fun open() {
@@ -173,7 +181,7 @@ class App : Application() {
     }
 
     private fun run(vararg command: String): Process {
-        val process = defaultFile.run(*command)
+        val process = defaultFile?.parentFile.run(*command)
         subProcesses.add(process)
         return process
     }

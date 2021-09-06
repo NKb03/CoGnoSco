@@ -89,8 +89,8 @@ sealed interface Accidental {
     }
 }
 
-enum class RegularAccidental : Accidental {
-    Natural, Flat, Sharp;
+enum class RegularAccidental(val chromaticSteps: Int) : Accidental {
+    Natural(0), Flat(-1), Sharp(+1);
 
     override val reference: RegularAccidental
         get() = this
@@ -161,7 +161,9 @@ data class Pitch(val register: Int, val name: PitchName, val accidental: Acciden
 
     val diatonicStep get() = register * 7 + name.diatonicStep
 
-    val chromaticStep get() = register * 12 + name.chromaticStep
+    val chromaticStep get() = register * 12 + name.chromaticStep + accidental.reference.chromaticSteps
+
+    val cent get() = chromaticStep * 100 + accidental.bend
 
     operator fun minus(p: Pitch): Int = diatonicStep - p.diatonicStep
 
@@ -174,7 +176,7 @@ data class Pitch(val register: Int, val name: PitchName, val accidental: Acciden
     }
 }
 
-enum class Dynamic(val velocity: Int) {
+enum class Dynamic(val midiVolume: Int) {
     PPP(8), PP(22), P(36), MP(47), MF(64), F(85), FF(104), FFF(127);
 
     override fun toString(): String = name.lowercase()

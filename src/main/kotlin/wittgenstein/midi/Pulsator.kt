@@ -20,6 +20,13 @@ class Pulsator {
         listeners.forEach { it.invoke() }
     }
 
+    inline fun start(lastPulse: Int, action: (pulse: Int) -> Unit) {
+        while (pulse <= lastPulse) {
+            action(pulse)
+            nextPulse()
+        }
+    }
+
     fun realtime(millisecondsPerPulse: Long) = addListener { Thread.sleep(millisecondsPerPulse) }
 
 

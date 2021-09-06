@@ -23,6 +23,7 @@ object Shortcuts {
     val NATURAL: KeyCombination = KeyCombination.valueOf("N")
     val OPEN: KeyCombination = KeyCombination.valueOf("Ctrl+O")
     val SAVE: KeyCombination = KeyCombination.valueOf("Ctrl+S")
+    val NEW: KeyCombination = KeyCombination.valueOf("Ctrl+N")
     val PLAY: KeyCombination = KeyCombination.valueOf("Ctrl+SPACE")
     val TYPESET: KeyCombination = KeyCombination.valueOf("Ctrl+P")
 
@@ -31,7 +32,7 @@ object Shortcuts {
         SELECT_TYPE, SELECT_INSTRUMENT,
         LOUDER, QUIETER,
         SHARP, FLAT, NATURAL, SELECT_BEND,
-        OPEN, SAVE, PLAY, TYPESET
+        OPEN, SAVE, NEW, PLAY, TYPESET
     )
 
     fun getShortcut(ev: KeyEvent): KeyCombination? {

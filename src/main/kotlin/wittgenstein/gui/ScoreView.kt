@@ -112,7 +112,7 @@ class ScoreView(
         if (element is Trill) trillAccidentalViews.remove(element)!!
     }
 
-    private fun clearScore() {
+    fun clearScore() {
         for (el in elements.toList()) {
             deleteElement(el)
         }

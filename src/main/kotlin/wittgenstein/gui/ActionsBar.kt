@@ -29,6 +29,7 @@ class ActionsBar : HBox(5.0) {
     enum class Action(val description: String, val glyph: FontAwesome.Glyph) {
         Open("Datei öffnen (Ctrl+O)", FontAwesome.Glyph.FOLDER_OPEN),
         Save("Datei speichern (Ctrl+S)", FontAwesome.Glyph.SAVE),
+        New("Neue Datei erstellen (Ctrl+N)", FontAwesome.Glyph.PLUS),
         Play("Abspielen (Ctrl+SPACE)", FontAwesome.Glyph.PLAY),
         Typeset("Partitur setzen (Ctrl+P)", FontAwesome.Glyph.PRINT);
     }

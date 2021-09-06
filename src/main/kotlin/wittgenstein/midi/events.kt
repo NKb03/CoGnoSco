@@ -7,8 +7,7 @@ const val PULSES_PER_BEAT = 32
 class EventListBuilder(private val handle: MidiOutput.NoteHandle) {
     private val result = mutableListOf<Event>()
 
-    fun at(beat: Int, action: MidiOutput.NoteHandle.() -> Unit) {
-        val pulse = beat * PULSES_PER_BEAT
+    fun at(pulse: Int, action: MidiOutput.NoteHandle.() -> Unit) {
         result.add(Event(pulse) { handle.action() })
     }
 
@@ -20,11 +19,12 @@ fun MidiOutput.eventList(block: EventListBuilder.() -> Unit): List<Event> =
 
 fun MidiOutput.play(pulseMap: Map<Int, List<Event>>) {
     val lastPulse = pulseMap.keys.maxOrNull()!!
-    while (pulsator.pulse <= lastPulse) {
+    pulsator.start(lastPulse) {
         val events = pulseMap[pulsator.pulse].orEmpty()
         for (ev in events) {
             ev.action()
         }
-        pulsator.nextPulse()
     }
 }
+
+fun List<Event>.toPulseMap(): Map<Int, List<Event>> = groupBy { it.pulse }

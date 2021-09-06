@@ -20,8 +20,14 @@ interface MidiOutput {
 
         fun trill(secondaryPitch: Pitch)
 
-        fun tremolo(speed: Int)
+        fun tremolo(pulsesPerRepetition: Int)
 
         fun gradualVolumeChange(targetPulse: Int, targetDynamic: Dynamic)
+
+        fun setInstrument(instrument: Instrument)
+
+        fun programChange(program: Int)
+
+        fun setVolume(volume: Int)
     }
 }
