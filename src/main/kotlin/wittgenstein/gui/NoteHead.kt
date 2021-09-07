@@ -52,35 +52,6 @@ class NoteHead(val element: Element? = null) : NodeWrapper<Shape>(), SelectableE
             }
         }
 
-    private fun createShape(headType: NoteHeadType): Shape = when (headType) {
-        NoteHeadType.Regular -> Ellipse(10.0, 7.0).apply {
-            rotate = -16.0
-        }
-        NoteHeadType.Triangle -> Polygon(
-            0.0, 14.0,
-            10.0, 0.0,
-            20.0, 14.0
-        )
-        NoteHeadType.Rectangle -> Rectangle(22.0, 16.3)
-        NoteHeadType.Rhombus -> Polygon(
-            0.0, 7.0,
-            12.5, 14.0,
-            25.0, 8.0,
-            12.5, 0.0
-        )
-        NoteHeadType.Cross -> Shape.union(
-            Line(
-                0.0, 0.0,
-                15.0, 12.0
-            ).also { it.strokeWidth = 3.0 },
-            Line(
-                15.0, 0.0,
-                0.0, 12.0
-            ).also { it.strokeWidth = 3.0 }
-        )
-        NoteHeadType.Slashed -> Line(-10.0, 0.0, 20.0, 15.0)
-    }
-
     override fun toString(): String =
         "NoteHead [ type = $noteHeadType, fill = $fill, scale = $scaleX, selected = $isSelected ]"
 
@@ -94,6 +65,35 @@ class NoteHead(val element: Element? = null) : NodeWrapper<Shape>(), SelectableE
         fun rightParentheses() = QuadCurve(13.0, 0.0, 20.0, 10.0, 13.0, 20.0).apply {
             stroke = Color.BLACK
             fill = Color.TRANSPARENT
+        }
+
+        fun createShape(headType: NoteHeadType): Shape = when (headType) {
+            NoteHeadType.Regular -> Ellipse(10.0, 7.0).apply {
+                rotate = -16.0
+            }
+            NoteHeadType.Triangle -> Polygon(
+                0.0, 14.0,
+                10.0, 0.0,
+                20.0, 14.0
+            )
+            NoteHeadType.Rectangle -> Rectangle(22.0, 16.3)
+            NoteHeadType.Rhombus -> Polygon(
+                0.0, 7.0,
+                12.5, 14.0,
+                25.0, 8.0,
+                12.5, 0.0
+            )
+            NoteHeadType.Cross -> Shape.union(
+                Line(
+                    0.0, 0.0,
+                    15.0, 12.0
+                ).also { it.strokeWidth = 3.0 },
+                Line(
+                    15.0, 0.0,
+                    0.0, 12.0
+                ).also { it.strokeWidth = 3.0 }
+            )
+            NoteHeadType.Slashed -> Line(-10.0, 0.0, 20.0, 15.0)
         }
     }
 }

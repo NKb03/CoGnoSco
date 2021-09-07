@@ -2,17 +2,33 @@ package wittgenstein.midi
 
 import wittgenstein.*
 import javax.sound.midi.MidiChannel
-import javax.sound.midi.MidiSystem
 import javax.sound.midi.Synthesizer
 
-class RTMidiOutput(synthesizer: Synthesizer, override val pulsator: Pulsator) : MidiOutput {
+class RTMidiOutput(synthesizer: Synthesizer) : MidiOutput {
+    private var currentPulse = 0
     private val freeChannels = synthesizer.channels.toMutableList()
     private val handles = mutableListOf<RTNoteHandle>()
 
     init {
         if (!synthesizer.isOpen) synthesizer.open()
-        pulsator.addListener {
-            handles.forEach { it.receivePulse(pulsator.pulse) }
+    }
+
+    override fun receivePulse(pulse: Int) {
+        currentPulse = pulse
+        for (handle in handles) {
+            handle.receivePulse(pulse)
+        }
+    }
+
+    override fun pause() {
+        for (handle in handles.toList()) {
+            handle.pause()
+        }
+    }
+
+    override fun resume() {
+        for (handle in handles) {
+            handle.resume()
         }
     }
 
@@ -38,10 +54,10 @@ class RTMidiOutput(synthesizer: Synthesizer, override val pulsator: Pulsator) : 
         private var _channel: MidiChannel? = null
         private val channel get() = _channel ?: error("handle not active")
 
+        private var instrument: Instrument? = null
         private var pitch: Pitch? = null
         private var initialDynamic: Int = 0
-        private var primaryPitchBend: Int = 0
-        private var secondaryPitchBend: Int = 0
+        private var secondaryPitch: Pitch? = null
         private var currentVolume = 0
         private var volumeChange: VolumeChange? = null
         private var tremoloPulsesPerRepetition: Int = 0
@@ -50,25 +66,34 @@ class RTMidiOutput(synthesizer: Synthesizer, override val pulsator: Pulsator) : 
 
         override fun noteOn(instrument: Instrument, pitch: Pitch?, initialDynamic: Dynamic) {
             check(!active) { "handle already active" }
-            println("noteOn $pitch")
             handles.add(this)
             _channel = acquireChannel()
+            this.instrument = instrument
             this.pitch = pitch
             val volume = initialDynamic.midiVolume
             this.initialDynamic = volume
             channel.programChange(instrument.program)
-            val step = if (pitch != null) {
-                primaryPitchBend = pitch.accidental.bend
-                channel.pitchBend = centToBend(pitch.accidental.bend)
-                pitch.chromaticStep + 12
-            } else instrument.key ?: error("no pitch provided")
             setVolume(volume)
-            channel.noteOn(step, 127)
+            channel.noteOn(pitch.midiPitch(), 127)
+        }
+
+        fun pause() {
+            channel.allNotesOff()
+        }
+
+        fun resume() {
+            channel.noteOn(pitch.midiPitch(), 127)
+        }
+
+        private fun Pitch?.midiPitch(): Int {
+            if (instrument!!.percussionKey != null) return instrument!!.percussionKey!!
+            checkNotNull(this) { "no pitch provided" }
+            channel.pitchBend = centToBend(accidental.bend)
+            return chromaticStep + 12
         }
 
         override fun setVolume(volume: Int) {
             if (currentVolume != volume) {
-                println("volume = $volume")
                 currentVolume = volume
                 channel.controlChange(7, volume)
             }
@@ -83,7 +108,6 @@ class RTMidiOutput(synthesizer: Synthesizer, override val pulsator: Pulsator) : 
         }
 
         override fun noteOff() {
-            println("note off $pitch")
             check(active) { "handle not active" }
             channel.allSoundOff()
             releaseChannel(channel)
@@ -91,13 +115,12 @@ class RTMidiOutput(synthesizer: Synthesizer, override val pulsator: Pulsator) : 
             _channel = null
         }
 
-        override fun trill(secondaryPitch: Pitch) {
-            println("trill $secondaryPitch")
-            secondaryPitchBend = primaryPitchBend + (secondaryPitch.cent - pitch!!.cent)
+        override fun trill(pitch: Pitch) {
+            secondaryPitch = pitch
         }
 
         override fun gradualVolumeChange(targetPulse: Int, targetDynamic: Dynamic) {
-            volumeChange = VolumeChange(pulsator.pulse, currentVolume, targetPulse, targetDynamic.midiVolume)
+            volumeChange = VolumeChange(currentPulse, currentVolume, targetPulse, targetDynamic.midiVolume)
         }
 
         override fun tremolo(pulsesPerRepetition: Int) {
@@ -105,7 +128,6 @@ class RTMidiOutput(synthesizer: Synthesizer, override val pulsator: Pulsator) : 
         }
 
         fun receivePulse(pulse: Int) {
-            println("receive pulse $pulse")
             val vc = volumeChange
             if (vc != null) {
                 val prop = (pulse - vc.startPulse).toDouble() / (vc.endPulse - vc.startPulse)
@@ -115,16 +137,21 @@ class RTMidiOutput(synthesizer: Synthesizer, override val pulsator: Pulsator) : 
                     volumeChange = null
                 }
             }
-            if (secondaryPitchBend != 0) {
-                if (pulse % 10 == 0) channel.pitchBend = centToBend(primaryPitchBend)
-                if (pulse % 10 == 5) channel.pitchBend = centToBend(secondaryPitchBend)
-                println("pitch bend = ${channel.pitchBend}")
+            if (secondaryPitch != null) {
+                if (pulse % 12 == 0) {
+                    channel.allSoundOff()
+                    channel.noteOn(secondaryPitch.midiPitch(), 127)
+                }
+                if (pulse % 12 == 6) {
+                    channel.allSoundOff()
+                    channel.noteOn(pitch.midiPitch(), 127)
+                }
             }
             if (tremoloPulsesPerRepetition != 0) {
                 if (pulse % tremoloPulsesPerRepetition == 0) {
-                    TODO()
-                } else if (pulse % tremoloPulsesPerRepetition == 1) {
-                    TODO()
+                    channel.noteOn(pitch.midiPitch(), 127)
+                } else if (pulse % tremoloPulsesPerRepetition == tremoloPulsesPerRepetition / 4 * 3) {
+                    channel.allNotesOff()
                 }
             }
         }

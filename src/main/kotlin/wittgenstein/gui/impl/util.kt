@@ -1,6 +1,7 @@
 package wittgenstein.gui.impl
 
 import javafx.application.Platform
+import javafx.event.EventTarget
 import javafx.scene.Node
 import javafx.scene.control.Alert
 import javafx.scene.control.ToggleGroup
@@ -8,6 +9,7 @@ import javafx.scene.image.Image
 import javafx.scene.image.ImageView
 import wittgenstein.Accidental
 import wittgenstein.gui.App
+import kotlin.concurrent.thread
 
 fun loadImage(acc: Accidental): Image {
     val res = "accidentals/$acc.png"
@@ -39,8 +41,28 @@ fun ToggleGroup.dontDeselectAll() {
     }
 }
 
-fun Alert.AlertType.show(message: String) {
-    Platform.runLater { Alert(this, message).show() }
+fun Alert.AlertType.show(message: String) = Platform.runLater {
+    Alert(this, message).run {
+        isResizable = true
+        setOnShown {
+            thread {
+                Thread.sleep(100)
+                Platform.runLater {
+                    isResizable = false
+                }
+            }
+        }
+        show()
+    }
 }
 
-inline fun <reified R: Any> Any.safeCast(block: R.() -> Unit): Unit? = (this as? R)?.block()
+inline fun <reified R : Any> Any.safeCast(block: R.() -> Unit): Unit? = (this as? R)?.block()
+
+inline fun <reified T> EventTarget.findParentOfType(): T? {
+    var cur = this
+    while (cur is Node) {
+        if (cur is T) return cur
+        else cur = cur.parent ?: return null
+    }
+    return null
+}

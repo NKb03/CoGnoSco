@@ -4,21 +4,14 @@ import javafx.beans.binding.Bindings
 import javafx.beans.property.SimpleDoubleProperty
 import javafx.event.EventTarget
 import javafx.scene.Node
-import javafx.scene.input.KeyCombination
 import javafx.scene.input.MouseEvent
 import javafx.scene.layout.Pane
 import javafx.scene.paint.Color
 import javafx.scene.shape.Line
 import wittgenstein.*
-import wittgenstein.gui.Shortcuts.DELETE
-import wittgenstein.gui.Shortcuts.DOWN
-import wittgenstein.gui.Shortcuts.ENTER
-import wittgenstein.gui.Shortcuts.LEFT
-import wittgenstein.gui.Shortcuts.RIGHT
-import wittgenstein.gui.Shortcuts.UP
+import wittgenstein.gui.Shortcut.*
 import wittgenstein.gui.impl.*
 import wittgenstein.midi.PULSES_PER_BEAT
-import wittgenstein.midi.Pulsator
 import kotlin.properties.Delegates
 
 class ScoreView(
@@ -95,7 +88,7 @@ class ScoreView(
         children.add(this)
     }
 
-    fun handleShortcut(shortcut: KeyCombination) {
+    fun handleShortcut(shortcut: Shortcut) {
         disposition.handleShortcut(shortcut)
     }
 
@@ -146,6 +139,8 @@ class ScoreView(
         if (element is Trill && element.secondaryPitch != null) {
             val littleHead = NoteHead(element).scale(SECONDARY_PITCH_SCALE)
             val littleAccidental = AccidentalView(element.secondaryPitch!!.accidental, littleHead)
+                .scale(SECONDARY_PITCH_SCALE)
+            trillAccidentalViews[element] = littleAccidental
             layoutSecondaryPitch(element, head, littleHead, littleAccidental)
         }
         elements.add(element)
@@ -204,7 +199,7 @@ class ScoreView(
 
         open fun replaced(new: Disposition) {}
 
-        open fun handleShortcut(ev: KeyCombination) {}
+        open fun handleShortcut(ev: Shortcut) {}
 
         open fun mouseClicked(ev: MouseEvent) {}
 
@@ -246,13 +241,14 @@ class ScoreView(
             element.dynamic = dynamic
         }
 
-        override fun handleShortcut(ev: KeyCombination) {
+        override fun handleShortcut(ev: Shortcut) {
             when (ev) {
-                DELETE -> deleteElement()
-                LEFT -> moveLeft()
-                RIGHT -> moveRight()
-                UP -> moveUp()
-                DOWN -> moveDown()
+                Delete -> deleteElement()
+                Left -> moveLeft()
+                Right -> moveRight()
+                Up -> moveUp()
+                Down -> moveDown()
+                else -> {}
             }
         }
 
@@ -332,7 +328,7 @@ class ScoreView(
 
         override fun mouseClicked(ev: MouseEvent) {
             selected?.isSelected = false
-            val element = findSelectableElement(ev.target)
+            val element = ev.target?.findParentOfType<SelectableElement>()
             selected = element
             element?.isSelected = true
             when (element) {
@@ -520,17 +516,18 @@ class ScoreView(
             if (!finished) deleteElement(trill)
         }
 
-        override fun handleShortcut(ev: KeyCombination) {
+        override fun handleShortcut(ev: Shortcut) {
             when (ev) {
-                UP -> {
+                Up -> {
                     littleHead.y -= PITCH_H
                     trill.secondaryPitch = trill.secondaryPitch!!.up()
                 }
-                DOWN -> {
+                Down -> {
                     littleHead.y += PITCH_H
                     trill.secondaryPitch = trill.secondaryPitch!!.down()
                 }
-                ENTER -> finish()
+                Enter -> finish()
+                else -> {}
             }
         }
 
@@ -585,13 +582,6 @@ class ScoreView(
         private fun Pitch.getY(): Double = (52 - diatonicStep) * PITCH_H.toDouble() - 8
 
         private fun Time.toXCoordinate(): Double = this * BEAT_W.toDouble()
-
-        private fun findSelectableElement(target: EventTarget?): SelectableElement? = when (target) {
-            is SelectableElement -> target
-            is Node -> findSelectableElement(target.parent)
-            else -> null
-        }
-
         private fun Pane.addHorizontalLines() {
             for (i in 7..17) {
                 val l = Line(0.0, i * PITCH_H * 2.0, W.toDouble(), i * PITCH_H * 2.0)

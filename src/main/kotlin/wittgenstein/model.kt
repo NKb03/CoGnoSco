@@ -42,7 +42,7 @@ enum class Instrument(
     val clef: Clef,
     val transpose: Int,
     val program: Int,
-    val key: Int? = null
+    val percussionKey: Int? = null
 ) {
     Flute("Flöte", "Fl.", Woodwinds, Clef.Violin, 0, 74),
     Oboe("Oboe", "Ob.", Woodwinds, Clef.Violin, 0, 69),
@@ -237,6 +237,7 @@ sealed interface Element {
         val noteHeadType: NoteHeadType get() = NoteHeadType.Regular
         val properties get() = listOf("instrument", "start", "startDynamic", "customY")
 
+        val resourceName: String get() = "element_types/${toString()}.png"
         fun createElement(): E
     }
 
@@ -349,6 +350,8 @@ class SimplePitchedContinuousElement(
     sealed class Type(id: String, description: String) :
         PitchedContinuousElement.Type<SimplePitchedContinuousElement>(id, description) {
         override fun createElement(): SimplePitchedContinuousElement = SimplePitchedContinuousElement(this)
+
+        override fun toString(): String = this::class.simpleName!!
     }
 
     object Regular : Type("reg", "durchgehaltener Ton")
@@ -387,6 +390,8 @@ class Trill : PitchedContinuousElement() {
 
     companion object : Type<Trill>("tr", "Triller") {
         override fun createElement(): Trill = Trill()
+
+        override fun toString(): String = "Trill"
     }
 }
 
@@ -397,6 +402,8 @@ open class ContinuousNoise(override val type: Type) : ContinuousElement, Abstrac
     sealed class Type(override val id: String, override val description: String) :
         ContinuousElement.Type<ContinuousNoise> {
         override fun createElement(): ContinuousNoise = ContinuousNoise(this)
+
+        override fun toString(): String = this::class.simpleName!!
     }
 
     object DrumRoll : Type("d.r.", "Trommelwirbel (Bass Drum, Snare, Pauke, Becken)") {
@@ -422,6 +429,8 @@ class DiscretePitchedElement(override val type: Type) : AbstractElement(), Pitch
         override val description: String
     ) : PitchedElement.Type<DiscretePitchedElement> {
         override fun createElement(): DiscretePitchedElement = DiscretePitchedElement(this)
+
+        override fun toString(): String = this::class.simpleName!!
     }
 
     object Staccato : Type("stacc.", "Staccato")
@@ -440,6 +449,8 @@ class DiscretePitchedElement(override val type: Type) : AbstractElement(), Pitch
 class DiscreteNoise(override val type: Type) : AbstractElement() {
     sealed class Type(override val id: String, override val description: String) : Element.Type<DiscreteNoise> {
         override fun createElement(): DiscreteNoise = DiscreteNoise(this)
+
+        override fun toString(): String = this::class.simpleName!!
     }
 
     object Bang : Type("bang", "Schlag") {

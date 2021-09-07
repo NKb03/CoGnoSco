@@ -7,34 +7,19 @@ import javafx.scene.Scene
 import javafx.scene.control.Alert.AlertType.ERROR
 import javafx.scene.control.Button
 import javafx.scene.control.ScrollPane
-import javafx.scene.input.KeyCombination
 import javafx.scene.layout.HBox
 import javafx.scene.layout.VBox
 import javafx.stage.FileChooser
 import javafx.stage.Stage
 import wittgenstein.*
-import wittgenstein.gui.ActionsBar.Action
-import wittgenstein.gui.Shortcuts.ESCAPE
-import wittgenstein.gui.Shortcuts.FLAT
-import wittgenstein.gui.Shortcuts.LOUDER
-import wittgenstein.gui.Shortcuts.NATURAL
-import wittgenstein.gui.Shortcuts.OPEN
-import wittgenstein.gui.Shortcuts.PLAY
-import wittgenstein.gui.Shortcuts.QUIETER
-import wittgenstein.gui.Shortcuts.SAVE
-import wittgenstein.gui.Shortcuts.SELECT_BEND
-import wittgenstein.gui.Shortcuts.SELECT_INSTRUMENT
-import wittgenstein.gui.Shortcuts.SELECT_TYPE
-import wittgenstein.gui.Shortcuts.SHARP
-import wittgenstein.gui.Shortcuts.TYPESET
+import wittgenstein.gui.Shortcut.*
+import wittgenstein.gui.impl.findParentOfType
 import wittgenstein.gui.impl.loadImage
 import wittgenstein.gui.impl.show
-import wittgenstein.WittgensteinException
-import wittgenstein.gui.Shortcuts.NEW
 import wittgenstein.lily.typeset
-import wittgenstein.midi.Pulsator
+import wittgenstein.midi.MidiPlayer
 import wittgenstein.midi.RTMidiOutput
-import wittgenstein.midi.play
+import wittgenstein.midi.createEvents
 import java.io.File
 import java.security.PrivilegedActionException
 import java.util.stream.Stream
@@ -50,8 +35,8 @@ class App : Application() {
     private lateinit var instrumentSelector: InstrumentSelector
     private lateinit var dynamicSelector: DynamicSelector
     private lateinit var scoreView: ScoreView
-    private val pulsator = Pulsator().realtime(16)
-    private val midiOutput = RTMidiOutput(MidiSystem.getSynthesizer(), pulsator)
+    private val midiOutput = RTMidiOutput(MidiSystem.getSynthesizer())
+    private val player = MidiPlayer(midiOutput).realtime(16)
     private var defaultFile: File? = null
         set(value) {
             field = value
@@ -66,11 +51,11 @@ class App : Application() {
         setupFileChooser()
         instantiateComponents()
         val layout = layout()
-        Shortcuts.listen(layout, this::handleShortcut)
-        handleActions()
-        pulsator.addListener {
+        Shortcut.listen(layout, this::handleShortcut)
+        actionsBar.setOnAction { action -> handleShortcut(action.shortcut) }
+        player.addListener { pulse ->
             Platform.runLater {
-                scoreView.setCurrentPulse(pulsator.pulse)
+                scoreView.setCurrentPulse(pulse)
             }
         }
         stage.title = "Wittgenstein - Neue Datei"
@@ -118,38 +103,35 @@ class App : Application() {
         }
     }
 
-    private fun handleActions() {
-        actionsBar.setOnAction(Action.Open, ::open)
-        actionsBar.setOnAction(Action.Save, ::save)
-        actionsBar.setOnAction(Action.Play, ::play)
-        actionsBar.setOnAction(Action.Typeset, ::typeset)
-        actionsBar.setOnAction(Action.New, ::new)
-    }
-
-    private fun handleShortcut(shortcut: KeyCombination) {
+    private fun handleShortcut(shortcut: Shortcut) {
         when (shortcut) {
-            ESCAPE -> typeSelector.select(ElementTypeSelector.POINTER)
-            SELECT_TYPE -> typeSelector.receiveFocus()
-            SELECT_INSTRUMENT -> instrumentSelector.receiveFocus()
-            LOUDER -> {
+            Escape -> typeSelector.select(ElementTypeSelector.POINTER)
+            SelectType -> typeSelector.receiveFocus()
+            SelectInstrument -> instrumentSelector.receiveFocus()
+            SelectBend -> accidentalSelector.pitchBendSelector.receiveFocus()
+            SelectDynamic -> dynamicSelector.receiveFocus()
+            Louder -> {
                 val selected = dynamicSelector.selected.value
                 val new = Dynamic.values().getOrElse(selected.ordinal + 1) { selected }
                 dynamicSelector.select(new)
             }
-            QUIETER -> {
+            Quieter -> {
                 val selected = dynamicSelector.selected.value
                 val new = Dynamic.values().getOrElse(selected.ordinal - 1) { selected }
                 dynamicSelector.select(new)
             }
-            SHARP -> accidentalSelector.regularAccidentalSelector.select(RegularAccidental.Sharp)
-            NATURAL -> accidentalSelector.regularAccidentalSelector.select(RegularAccidental.Natural)
-            FLAT -> accidentalSelector.regularAccidentalSelector.select(RegularAccidental.Flat)
-            SELECT_BEND -> accidentalSelector.pitchBendSelector.receiveFocus()
-            OPEN -> open()
-            SAVE -> save()
-            NEW -> new()
-            PLAY -> play()
-            TYPESET -> typeset()
+            Sharp -> accidentalSelector.regularAccidentalSelector.select(RegularAccidental.Sharp)
+            Natural -> accidentalSelector.regularAccidentalSelector.select(RegularAccidental.Natural)
+            Flat -> accidentalSelector.regularAccidentalSelector.select(RegularAccidental.Flat)
+            is Digit -> {
+                val bar = stage.scene.focusOwner.findParentOfType<SelectorBar<*>>()
+                bar?.selectIndex(shortcut.value)
+            }
+            Open -> open()
+            Save -> save()
+            New -> new()
+            Play -> playOrStop()
+            Typeset -> typeset()
             else -> scoreView.handleShortcut(shortcut)
         }
     }
@@ -198,8 +180,11 @@ class App : Application() {
         }.setUncaughtExceptionHandler { _, exc -> handleUncaughtException(exc) }
     }
 
-    private fun play() = thread(isDaemon = true) {
-        midiOutput.play(scoreView.getScore())
+    private fun playOrStop() {
+        if (!player.isPlaying) {
+            player.setEvents(scoreView.getScore().createEvents(midiOutput))
+            player.play()
+        } else player.pause()
     }
 
     private fun layout(): VBox = VBox(

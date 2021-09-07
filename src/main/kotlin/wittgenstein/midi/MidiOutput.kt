@@ -5,9 +5,13 @@ import wittgenstein.Instrument
 import wittgenstein.Pitch
 
 interface MidiOutput {
-    val pulsator: Pulsator
-
     fun createNoteHandle(): NoteHandle
+
+    fun receivePulse(pulse: Int)
+
+    fun pause()
+
+    fun resume()
 
     interface NoteHandle {
         val active: Boolean
@@ -18,7 +22,7 @@ interface MidiOutput {
 
         fun noteOff()
 
-        fun trill(secondaryPitch: Pitch)
+        fun trill(pitch: Pitch)
 
         fun tremolo(pulsesPerRepetition: Int)
 

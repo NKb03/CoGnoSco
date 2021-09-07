@@ -3,10 +3,7 @@ package wittgenstein
 import javafx.application.Application
 import wittgenstein.gui.App
 import wittgenstein.lily.typeset
-import wittgenstein.midi.PULSES_PER_BEAT
-import wittgenstein.midi.Pulsator
-import wittgenstein.midi.RTMidiOutput
-import wittgenstein.midi.play
+import wittgenstein.midi.*
 import java.io.File
 import javax.sound.midi.MidiSystem
 
@@ -49,17 +46,17 @@ object Main {
     private fun play(file: File) {
         val score = GraphicalScore.load(file)
         val synth = MidiSystem.getSynthesizer()
-        val pulsator = Pulsator().realtime(16)
-        println()
-        pulsator.addListener {
+        val output = RTMidiOutput(synth)
+        val player = MidiPlayer(output).realtime(16).addListener { pulse ->
             print("\r")
-            val time = pulsator.pulse / PULSES_PER_BEAT
+            val time = pulse / PULSES_PER_BEAT
             val bar = time / 2
             val beat = time % 2
             print("Takt $bar, Schlag $beat")
         }
-        val output = RTMidiOutput(synth, pulsator)
-        output.play(score)
+        println()
+        player.setEvents(score.createEvents(output))
+        player.play()
     }
 
     private fun help() {
