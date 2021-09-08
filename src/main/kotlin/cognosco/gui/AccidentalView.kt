@@ -19,7 +19,7 @@ class AccidentalView(
     init {
         image = loadImage(acc)
         fitHeight(25.0)
-        xProperty().bind(Bindings.subtract(head.xProperty(), Bindings.multiply(scaleYProperty(), 12)))
+        xProperty().bind(Bindings.subtract(head.xProperty(), Bindings.multiply(scaleYProperty().multiply(scaleYProperty()), 20)))
         yProperty().bind(Bindings.subtract(head.yProperty(), 5))
     }
 

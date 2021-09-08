@@ -1,6 +1,5 @@
 package cognosco.gui
 
-import javafx.scene.Node
 import javafx.scene.Scene
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyCombination
@@ -14,10 +13,10 @@ sealed class Shortcut(private val str: String) {
     object Escape : Shortcut("ESCAPE")
     object Delete : Shortcut("DELETE")
     object Enter : Shortcut("ENTER")
-    object Down : Shortcut("DOWN")
-    object Up : Shortcut("UP")
-    object Right : Shortcut("RIGHT")
-    object Left : Shortcut("LEFT")
+    object Down : Shortcut("Ctrl+DOWN")
+    object Up : Shortcut("Ctrl+UP")
+    object Right : Shortcut("Ctrl+RIGHT")
+    object Left : Shortcut("Ctrl+LEFT")
     object SelectType : Shortcut("T")
     object SelectInstrument : Shortcut("I")
     object SelectDynamic : Shortcut("D")
@@ -27,20 +26,20 @@ sealed class Shortcut(private val str: String) {
     object Sharp : Shortcut("S")
     object Flat : Shortcut("F")
     object Natural : Shortcut("N")
-    object Open : Shortcut("Ctrl+O")
     object Save : Shortcut("Ctrl+S")
     object New : Shortcut("Ctrl+N")
     object Play : Shortcut("SPACE")
     object Typeset : Shortcut("Ctrl+P")
+    object Open: Shortcut("Ctrl+O")
     data class Digit(val value: Int) : Shortcut("$value")
 
     companion object {
-        private val shortcuts = listOf(
+        private val shortcuts = listOfNotNull(
             Delete, Down, Up, Right, Left, Enter,
             SelectType, SelectInstrument, SelectDynamic, SelectBend,
             Louder, Quieter,
             Sharp, Flat, Natural,
-            Save, New, Play, Typeset
+            Open, Save, New, Play, Typeset
         )
 
         fun getShortcut(ev: KeyEvent): Shortcut? {

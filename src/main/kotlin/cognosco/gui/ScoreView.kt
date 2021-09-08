@@ -126,6 +126,10 @@ class ScoreView(
         } else {
             head.y = element.customY ?: error("no custom-y provided for '$element'")
         }
+        val ledgerLines = createLedgerLines(head)
+        for (line in ledgerLines) {
+            add(element, line)
+        }
         if (element is ContinuousElement && element.climax != 0 && element.end != 0) {
             val line = createDurationLine(element, head)
             val climaxX = SimpleDoubleProperty(element.climax.toXCoordinate())
@@ -178,6 +182,25 @@ class ScoreView(
         val diffY = littleHead.yProperty().subtract(head.yProperty())
         connector.visibleProperty().bind(diffY.greaterThan(30).or(diffY.lessThan(-30)))
         add(trill, littleHead, accidental, lp, rp, connector)
+    }
+
+    private fun createLedgerLines(head: NoteHead): List<Line> {
+        val lines = mutableListOf<Line>()
+        for (y in 8 * PITCH_H * 2 downTo head.y.toInt() + 8 step 50) {
+            lines.add(createLedgerLine(head, y.toDouble()))
+        }
+        for (y in 18 * PITCH_H * 2..head.y.toInt() + 8 step 50) {
+            lines.add(createLedgerLine(head, y.toDouble()))
+        }
+        return lines
+    }
+
+    private fun createLedgerLine(head: NoteHead, y: Double): Line = Line().apply {
+        strokeWidth = 3.0
+        startXProperty().bind(head.xProperty().subtract(4))
+        endXProperty().bind(startXProperty().add(30))
+        startY = y
+        endY = y
     }
 
     fun openScore(score: GraphicalScore) {
@@ -353,6 +376,7 @@ class ScoreView(
         private var lastCreatedDynamic: DynamicView? = null
     ) : EditElement() {
         private val phantomHead = NoteHead().phantom()
+        private var ledgerLines = emptyList<Line>()
         private val phantomAccidental = AccidentalView(accidentalSelector.selected.value, phantomHead).phantom()
 
         init {
@@ -379,6 +403,7 @@ class ScoreView(
 
         override fun replaced(new: Disposition) {
             children.removeAll(phantomHead, phantomAccidental)
+            children.removeAll(ledgerLines)
             if (new is Pointer) new.selected = lastCreated
         }
 
@@ -395,6 +420,13 @@ class ScoreView(
             phantomHead.isVisible = true
             phantomHead.x = x
             phantomHead.y = y - 8
+            updateLedgerLines()
+        }
+
+        private fun updateLedgerLines() {
+            children.removeAll(ledgerLines)
+            ledgerLines = createLedgerLines(phantomHead)
+            children.addAll(ledgerLines)
         }
 
         override fun mouseExited(ev: MouseEvent) {
@@ -581,6 +613,7 @@ class ScoreView(
         private fun Pitch.getY(): Double = (52 - diatonicStep) * PITCH_H.toDouble() - 8
 
         private fun Time.toXCoordinate(): Double = this * BEAT_W.toDouble()
+
         private fun Pane.addHorizontalLines() {
             for (i in 7..17) {
                 val l = Line(0.0, i * PITCH_H * 2.0, W.toDouble(), i * PITCH_H * 2.0)

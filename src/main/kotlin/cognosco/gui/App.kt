@@ -20,6 +20,7 @@ import javafx.scene.control.ScrollPane
 import javafx.scene.layout.HBox
 import javafx.scene.layout.VBox
 import javafx.stage.FileChooser
+import javafx.stage.Screen
 import javafx.stage.Stage
 import java.io.File
 import java.security.PrivilegedActionException
@@ -63,8 +64,10 @@ class App : Application() {
     private fun show() {
         stage.title = "CoGnoSco - Neue Datei"
         addIcons()
-        stage.isMaximized = true
         stage.scene = Scene(Label())
+        stage.width = Screen.getPrimary().bounds.width - 200
+        stage.height = 1300.0
+        stage.centerOnScreen()
         stage.scene.stylesheets.add("cognosco/gui/style.css")
         stage.show()
     }
@@ -205,19 +208,22 @@ class App : Application() {
                 HBox(10.0, containerButton(accidentalSelector), containerButton(dynamicSelector)),
                 containerButton(instrumentSelector)
             )
-        } else HBox(
-            10.0,
-            containerButton(actionsBar),
-            containerButton(typeSelector),
-            containerButton(accidentalSelector),
-            containerButton(dynamicSelector),
-            containerButton(instrumentSelector)
-        )
+        } else {
+            HBox(
+                10.0,
+                containerButton(actionsBar),
+                containerButton(typeSelector),
+                containerButton(accidentalSelector),
+                containerButton(dynamicSelector),
+                containerButton(instrumentSelector)
+            )
+        }
         val stave = HBox(ScoreView.Clefs(), ScrollPane(scoreView).apply {
             prefWidth = stage.width - 130.0
             prefHeight = scoreView.prefHeight + 20
         })
-        stage.scene.root = VBox(bar, stave)
+        val layout = VBox(bar, stave)
+        stage.scene.root = layout
     }
 
     private fun setupFileChooser() {
