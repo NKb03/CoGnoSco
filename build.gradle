@@ -8,6 +8,7 @@ plugins {
 javafx {
     version = '11.0.2'
     modules = ['javafx.controls']
+    configuration = 'compile'
 }
 
 group 'com.github.nkb03'
@@ -17,7 +18,7 @@ repositories {
     mavenCentral()
 }
 
-mainClassName = 'wittgenstein.Main'
+mainClassName = 'cognosco.Main'
 
 compileKotlin {
     kotlinOptions {
@@ -26,9 +27,18 @@ compileKotlin {
     }
 }
 
+task standaloneJar(type: Jar) {
+    from {
+        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+    } with jar
+    manifest {
+        attributes 'Main-Class': mainClassName
+    }
+}
+
 dependencies {
-    compile 'org.jetbrains.kotlin:kotlin-stdlib'
-    compile 'org.jetbrains.kotlin:kotlin-reflect'
+    compile 'org.jetbrains.kotlin:kotlin-stdlib:1.5.30'
+    compile 'org.jetbrains.kotlin:kotlin-reflect:1.5.30'
     compile 'org.controlsfx:controlsfx:11.1.0'
     compile 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.2'
 }
