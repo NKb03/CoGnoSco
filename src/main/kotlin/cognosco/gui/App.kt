@@ -157,6 +157,7 @@ class App : Application() {
 
     private fun open() {
         val file = fileChooser.showOpenDialog(stage) ?: return
+        fileChooser.initialDirectory = file.parentFile
         open(file)
     }
 
@@ -168,7 +169,8 @@ class App : Application() {
 
     private fun save(): File? {
         var file = defaultFile ?: fileChooser.showSaveDialog(stage) ?: return null
-        if (file.extension.isEmpty()) file = file.parentFile.resolve("${file.name}.wtg.json")
+        fileChooser.initialDirectory = file.parentFile
+        if (file.extension.isEmpty()) file = file.parentFile.resolve("${file.name}.json")
         val score = scoreView.getScore()
         val encoded = score.encodeToString()
         file.writeText(encoded)
@@ -184,13 +186,17 @@ class App : Application() {
 
     private fun typeset() {
         val file = save() ?: return
-        val name = file.name.removeSuffix(".wtg.json")
+        val name = file.name.removeSuffix(".json")
         val ly = file.resolveSibling("$name.ly")
         val score = scoreView.getScore()
         thread(isDaemon = true) {
             typeset(score, ly)
             run("lilypond", "$name.ly").join()
-            run("okular", "--unique", "$name.pdf")
+            try {
+                run("okular", "--unique", "$name.pdf")
+            } catch (e: CognoscoException) {
+                run("$name.pdf")
+            }
         }.setUncaughtExceptionHandler { _, exc -> handleUncaughtException(exc) }
     }
 
@@ -229,7 +235,6 @@ class App : Application() {
     private fun setupFileChooser() {
         fileChooser = FileChooser()
         fileChooser.extensionFilters.add(FileChooser.ExtensionFilter("JSON files", "*.json"))
-        fileChooser.initialDirectory = File("examples/")
     }
 
     private fun containerButton(content: Node) = Button(null, content).apply {

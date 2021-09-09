@@ -5,8 +5,8 @@
 #(set-default-paper-size "a3landscape")
 
 \paper {
-  indent = 3.0\cm  % space for instrumentName
-  short-indent = 1.5\cm  % space for shortInstrumentName
+  indent = 2.0\cm  % space for instrumentName
+  short-indent = 1.0\cm  % space for shortInstrumentName
 }
 
 \header {

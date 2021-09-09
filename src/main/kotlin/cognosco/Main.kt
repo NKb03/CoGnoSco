@@ -39,7 +39,7 @@ object Main {
 
     private fun typeset(file: File) {
         val score = GraphicalScore.load(file)
-        val name = file.name.removeSuffix(".wtg.json")
+        val name = file.name.removeSuffix(".json")
         val ly = file.resolveSibling("$name.ly")
         typeset(score, ly)
         workingDirectory.run("lilypond", "$ly").join()
@@ -64,10 +64,10 @@ object Main {
 
     private fun help() {
         println("Usage: ")
-        println("wtg launch <score>          launch the user interface opening the specified score")
-        println("wtg typeset <score>         typeset the specified score using LilyPond")
-        println("wtg play <score>            play the specified score using MIDI")
-        println("wtg help                    print this help page")
+        println("cognosco launch <score>          launch the user interface opening the specified score")
+        println("cognosco typeset <score>         typeset the specified score using LilyPond")
+        println("cognosco play <score>            play the specified score using MIDI")
+        println("cognosco help                    print this help page")
     }
 
 }

@@ -12,7 +12,7 @@ fun File?.run(vararg command: String): Process = ProcessBuilder(*command)
 fun Process.join() {
     val exitCode = waitFor()
     if (exitCode != 0) {
-        error("Process '${this}' finished with non-zero exit code")
+        throw CognoscoException("Process '${this}' finished with non-zero exit code")
     }
 }
 
