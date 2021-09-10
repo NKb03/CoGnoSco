@@ -1,10 +1,10 @@
 package cognosco.gui
 
-import javafx.beans.binding.Bindings
-import javafx.scene.image.ImageView
 import cognosco.Accidental
 import cognosco.gui.impl.fitHeight
 import cognosco.gui.impl.loadImage
+import javafx.beans.binding.Bindings
+import javafx.scene.image.ImageView
 
 class AccidentalView(
     acc: Accidental,
@@ -19,7 +19,12 @@ class AccidentalView(
     init {
         image = loadImage(acc)
         fitHeight(25.0)
-        xProperty().bind(Bindings.subtract(head.xProperty(), Bindings.multiply(scaleYProperty().multiply(scaleYProperty()), 20)))
+        xProperty().bind(
+            Bindings.subtract(
+                head.xProperty(),
+                Bindings.multiply(scaleYProperty().multiply(scaleYProperty()), 15)
+            )
+        )
         yProperty().bind(Bindings.subtract(head.yProperty(), 5))
     }
 

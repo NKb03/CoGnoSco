@@ -49,19 +49,19 @@ class AccidentalSelector : HBox(5.0) {
     }
 
     class MicrotonalAccidentalSelector(ref: RegularAccidental) : SelectorBar<Int>(STANDARD_BENDS) {
-        var reference: RegularAccidental = ref
+        var reference: RegularAccidental? = ref
             set(value) {
                 field = value
                 reload()
             }
-            get() = field
 
         override fun extractGraphic(option: Int): Node {
-            val acc = makeMicroTonalAccidental(reference, option)
+            val acc = makeMicroTonalAccidental(reference ?: RegularAccidental.Natural, option)
             return loadImage(acc).view().fitHeight(30.0)
         }
 
-        override fun extractDescription(option: Int): String = makeMicroTonalAccidental(reference, option).toString()
+        override fun extractDescription(option: Int): String =
+            makeMicroTonalAccidental(reference ?: RegularAccidental.Natural, option).toString()
 
         override fun ToggleButton.extraConfig(option: Int) {
             prefWidth = 45.0

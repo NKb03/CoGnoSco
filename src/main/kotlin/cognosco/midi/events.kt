@@ -26,9 +26,10 @@ fun GraphicalScore.createEvents(output: MidiOutput): List<Event> =
                 noteOn(el.instrument!!, el.pitch, el.startDynamic)
                 when {
                     el is Trill -> trill(el.secondaryPitch!!)
-                    el.type == SimplePitchedContinuousElement.FastRepeat -> tremolo(4)
-                    el.type == SimplePitchedContinuousElement.Repeat -> tremolo(32)
-                    el.type == DiscretePitchedElement.Percussive && el.instrument!!.family == InstrumentFamily.Strings ->
+                    el.type == SimplePitchedContinuousElement.Type.FastRepeat -> tremolo(4)
+                    el.type == SimplePitchedContinuousElement.Type.Repeat -> tremolo(32)
+                    el.type == DiscretePitchedElement.Type.Percussive
+                            && el.instrument!!.family == InstrumentFamily.Strings ->
                         programChange(45)  //Pizzicato Strings
                 }
             }

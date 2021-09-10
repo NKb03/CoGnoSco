@@ -39,20 +39,20 @@ private fun Clef.lilypond() = name.lowercase()
 private val String.q get() = "\"$this\""
 
 private fun getTechnique(type: Element.Type<Element>, instrument: Instrument) = when (type) {
-    DiscretePitchedElement.Percussive ->
+    DiscretePitchedElement.Type.Percussive ->
         if (instrument.family == InstrumentFamily.Strings) Technique.Pizzicato else Technique.SlapTongue
-    DiscretePitchedElement.Staccato -> Technique.Staccato
-    DiscretePitchedElement.ColLegnoBattuto -> Technique.ColLegnoBattuto
+    DiscretePitchedElement.Type.Staccato -> Technique.Staccato
+    DiscretePitchedElement.Type.ColLegnoBattuto -> Technique.ColLegnoBattuto
     Trill -> Technique.Ordinario
-    SimplePitchedContinuousElement.Noisy ->
+    SimplePitchedContinuousElement.Type.Noisy ->
         if (instrument.family == InstrumentFamily.Strings) Technique.ColLegnoTratto else Technique.Noisy
-    SimplePitchedContinuousElement.FastRepeat ->
+    SimplePitchedContinuousElement.Type.FastRepeat ->
         if (instrument.family == InstrumentFamily.Strings) Technique.Ordinario else Technique.FlutterTongue
-    SimplePitchedContinuousElement.Repeat -> Technique.Ordinario
-    SimplePitchedContinuousElement.Regular -> Technique.Ordinario
-    ContinuousNoise.Breath -> TODO()
-    ContinuousNoise.DrumRoll -> Technique.DrumRoll
-    DiscreteNoise.Bang -> Technique.Bang
+    SimplePitchedContinuousElement.Type.Repeat -> Technique.Ordinario
+    SimplePitchedContinuousElement.Type.Regular -> Technique.Ordinario
+    ContinuousNoise.Type.Breath -> TODO()
+    ContinuousNoise.Type.DrumRoll -> Technique.DrumRoll
+    DiscreteNoise.Type.Bang -> Technique.Bang
 }
 
 private fun ElementTypesetter.typesetElement(element: Element, instrument: Instrument) {
@@ -68,11 +68,11 @@ private fun ElementTypesetter.typesetElement(element: Element, instrument: Instr
     } else {
         val type = if (element is SimplePitchedContinuousElement) {
             when (element.type) {
-                SimplePitchedContinuousElement.FastRepeat -> {
+                SimplePitchedContinuousElement.Type.FastRepeat -> {
                     +"\\repeat tremolo 8"
                     "64"
                 }
-                SimplePitchedContinuousElement.Repeat -> {
+                SimplePitchedContinuousElement.Type.Repeat -> {
                     +"\\repeat tremolo 4"
                     "32"
                 }

@@ -179,6 +179,8 @@ sealed interface Element {
     val end: Time
     val pitch: Pitch? get() = null
 
+    fun setType(type: Type<*>): Boolean
+
     fun copyFrom(original: Element) {
         instrument = original.instrument
         start = original.start
@@ -216,26 +218,27 @@ sealed interface Element {
     sealed interface Type<out E : Element> {
         val id: String
         val description: String
+
         val noteHeadType: NoteHeadType get() = NoteHeadType.Regular
-        val properties get() = listOf("instrument", "start", "startDynamic", "customY")
 
         val resourceName: String get() = "element_types/${toString()}.png"
+
         fun createElement(): E
     }
 
     companion object {
         val ALL_TYPES = listOf(
-            SimplePitchedContinuousElement.Regular,
+            SimplePitchedContinuousElement.Type.Regular,
             Trill,
-            SimplePitchedContinuousElement.FastRepeat,
-            SimplePitchedContinuousElement.Repeat,
-            SimplePitchedContinuousElement.Noisy,
-            ContinuousNoise.DrumRoll,
-            ContinuousNoise.Breath,
-            DiscretePitchedElement.Staccato,
-            DiscretePitchedElement.Percussive,
-            DiscretePitchedElement.ColLegnoBattuto,
-            DiscreteNoise.Bang
+            SimplePitchedContinuousElement.Type.FastRepeat,
+            SimplePitchedContinuousElement.Type.Repeat,
+            SimplePitchedContinuousElement.Type.Noisy,
+            ContinuousNoise.Type.DrumRoll,
+            ContinuousNoise.Type.Breath,
+            DiscretePitchedElement.Type.Staccato,
+            DiscretePitchedElement.Type.Percussive,
+            DiscretePitchedElement.Type.ColLegnoBattuto,
+            DiscreteNoise.Type.Bang
         )
 
         private val map = ALL_TYPES.associateBy { it.id }
@@ -274,7 +277,7 @@ sealed class AbstractElement : Element {
 }
 
 @Serializable
-class ElementPhase(var end: Time, var targetPitch: Pitch, var targetDynamic: Dynamic)
+class ElementPhase(var end: Time, var targetPitch: Pitch?, var targetDynamic: Dynamic)
 
 sealed interface ContinuousElement : Element {
     abstract override val type: Type<ContinuousElement>
@@ -314,40 +317,39 @@ sealed class PitchedContinuousElement : ContinuousElement, PitchedElement, Abstr
         super<PitchedElement>.copyFrom(original)
     }
 
-    sealed class Type<out E : PitchedContinuousElement>(
-        override val id: String,
-        override val description: String
-    ) : PitchedElement.Type<E>, ContinuousElement.Type<E>
+    sealed interface Type<out E : PitchedContinuousElement> : PitchedElement.Type<E>, ContinuousElement.Type<E>
 }
 
 class SimplePitchedContinuousElement(
-    override val type: Type,
+    override var type: Type,
 ) : PitchedContinuousElement() {
     override fun toString(): String = "${type.id} $pitch (${instrument?.shortName}), $start, ($startDynamic)"
 
+    override fun setType(type: Element.Type<*>): Boolean {
+        if (type !is Type) return false
+        this.type = type
+        return true
+    }
 
-    sealed class Type(id: String, description: String) :
-        PitchedContinuousElement.Type<SimplePitchedContinuousElement>(id, description) {
+    enum class Type(
+        override val id: String,
+        override val description: String
+    ) : PitchedContinuousElement.Type<SimplePitchedContinuousElement> {
+        Regular("reg", "durchgehaltener Ton"),
+        FastRepeat("fastrep", "schnelle Tonwiederholung (bei Bläsern Flatterzunge, bei Streichern Tremolo)") {
+            override val strokeDashArray: List<Double>
+                get() = listOf(0.0, 7.0)
+        },
+        Repeat("rep", "Tonwiederholung") {
+            override val strokeDashArray: List<Double>
+                get() = listOf(4.0, 11.0)
+        },
+        Noisy("noisy", "geräuschhaft (bei Bläsern mit viel Luft, bei Streichern col legno)") {
+            override val noteHeadType: NoteHeadType
+                get() = NoteHeadType.Rectangle
+        };
+
         override fun createElement(): SimplePitchedContinuousElement = SimplePitchedContinuousElement(this)
-
-        override fun toString(): String = this::class.simpleName!!
-    }
-
-    object Regular : Type("reg", "durchgehaltener Ton")
-
-    object FastRepeat : Type("fastrep", "schnelle Tonwiederholung (bei Bläsern Flatterzunge, bei Streichern Tremolo)") {
-        override val strokeDashArray: List<Double>
-            get() = listOf(0.0, 7.0)
-    }
-
-    object Repeat : Type("rep", "Tonwiederholung") {
-        override val strokeDashArray: List<Double>
-            get() = listOf(4.0, 11.0)
-    }
-
-    object Noisy : Type("noisy", "geräuschhaft (bei Bläsern mit viel Luft, bei Streichern col legno)") {
-        override val noteHeadType: NoteHeadType
-            get() = NoteHeadType.Rectangle
     }
 }
 
@@ -364,77 +366,95 @@ class Trill : PitchedContinuousElement() {
         }
     }
 
+    override fun setType(type: Element.Type<*>): Boolean = false
+
     override val type: Type<Trill>
         get() = Trill
 
-    companion object : Type<Trill>("tr", "Triller") {
+    companion object : Type<Trill> {
+        override val id: String
+            get() = "tr"
+
+        override val description: String
+            get() = "Triller"
+
         override fun createElement(): Trill = Trill()
 
         override fun toString(): String = "Trill"
     }
 }
 
-open class ContinuousNoise(override val type: Type) : ContinuousElement, AbstractContinuousElement() {
-    override fun toString(): String =
-        "${type.id} (${instrument?.shortName}), $start ($startDynamic)"
+open class ContinuousNoise(override var type: Type) : ContinuousElement, AbstractContinuousElement() {
+    override fun toString(): String = "${type.id} (${instrument?.shortName}), $start ($startDynamic)"
 
-    sealed class Type(override val id: String, override val description: String) :
+    override fun setType(type: Element.Type<*>): Boolean {
+        if (type !is Type) return false
+        this.type = type
+        return true
+    }
+
+    enum class Type(override val id: String, override val description: String) :
         ContinuousElement.Type<ContinuousNoise> {
+        DrumRoll("d.r.", "Trommelwirbel (Bass Drum, Snare, Pauke, Becken)") {
+            override val noteHeadType: NoteHeadType
+                get() = NoteHeadType.Rectangle
+
+            override val strokeDashArray: List<Double> = listOf(-0.0, 6.0)
+        },
+        Breath("br.", "Atmen (ganzes Orchester)") {
+            override val noteHeadType: NoteHeadType
+                get() = NoteHeadType.Rhombus
+        };
+
         override fun createElement(): ContinuousNoise = ContinuousNoise(this)
-
-        override fun toString(): String = this::class.simpleName!!
-    }
-
-    object DrumRoll : Type("d.r.", "Trommelwirbel (Bass Drum, Snare, Pauke, Becken)") {
-        override val noteHeadType: NoteHeadType
-            get() = NoteHeadType.Rectangle
-
-        override val strokeDashArray: List<Double> = listOf(-0.0, 6.0)
-    }
-
-    object Breath : Type("br.", "Atmen (ganzes Orchester)") {
-        override val noteHeadType: NoteHeadType
-            get() = NoteHeadType.Rhombus
     }
 }
 
-class DiscretePitchedElement(override val type: Type) : AbstractElement(), PitchedElement {
+class DiscretePitchedElement(override var type: Type) : AbstractElement(), PitchedElement {
     override lateinit var pitch: Pitch
+
+    override fun setType(type: Element.Type<*>): Boolean {
+        if (type !is Type) return false
+        this.type = type
+        return true
+    }
 
     override fun toString(): String = "${type.id}: $pitch gespielt von ${instrument?.shortName}, $start ($startDynamic)"
 
-    sealed class Type(
+    enum class Type(
         override val id: String,
         override val description: String
     ) : PitchedElement.Type<DiscretePitchedElement> {
+        Staccato("stacc.", "Staccato"),
+        Percussive("perc.", "Perkussiv (Streicher pizz., Bläser slap tongue)") {
+            override val noteHeadType: NoteHeadType
+                get() = NoteHeadType.Cross
+        },
+        ColLegnoBattuto("c.b.t", "col legno battuto") {
+            override val noteHeadType: NoteHeadType
+                get() = NoteHeadType.Triangle
+        };
+
         override fun createElement(): DiscretePitchedElement = DiscretePitchedElement(this)
-
-        override fun toString(): String = this::class.simpleName!!
-    }
-
-    object Staccato : Type("stacc.", "Staccato")
-
-    object Percussive : Type("perc.", "Perkussiv (Streicher pizz., Bläser slap tongue)") {
-        override val noteHeadType: NoteHeadType
-            get() = NoteHeadType.Cross
-    }
-
-    object ColLegnoBattuto : Type("c.b.t", "col legno battuto") {
-        override val noteHeadType: NoteHeadType
-            get() = NoteHeadType.Triangle
     }
 }
 
-class DiscreteNoise(override val type: Type) : AbstractElement() {
-    sealed class Type(override val id: String, override val description: String) : Element.Type<DiscreteNoise> {
-        override fun createElement(): DiscreteNoise = DiscreteNoise(this)
-
-        override fun toString(): String = this::class.simpleName!!
+class DiscreteNoise(override var type: Type) : AbstractElement() {
+    override fun setType(type: Element.Type<*>): Boolean {
+        if (type !is Type) return false
+        this.type = type
+        return true
     }
 
-    object Bang : Type("bang", "Schlag") {
-        override val noteHeadType: NoteHeadType
-            get() = NoteHeadType.Rectangle
+    override fun toString(): String = "${type.id} gespielt von ${instrument?.shortName}, $start ($startDynamic)"
+
+    enum class Type(override val id: String, override val description: String) : Element.Type<DiscreteNoise> {
+        Bang("bang", "Schlag") {
+            override val noteHeadType: NoteHeadType
+                get() = NoteHeadType.Rectangle
+        };
+
+        override fun createElement(): DiscreteNoise = DiscreteNoise(this)
     }
 }
 
