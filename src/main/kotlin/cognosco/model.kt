@@ -3,6 +3,7 @@
 package cognosco
 
 import cognosco.InstrumentFamily.*
+import cognosco.lily.lilypond
 import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
@@ -76,15 +77,24 @@ sealed interface Accidental {
     object Serializer : KSerializer<Accidental> {
         override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("accidental", PrimitiveKind.STRING)
 
-        override fun serialize(encoder: Encoder, value: Accidental) = encoder.encodeString(value.toString())
+        override fun serialize(encoder: Encoder, value: Accidental) = encoder.encodeString(value.lilypond())
 
         override fun deserialize(decoder: Decoder): Accidental {
             val str = decoder.decodeString()
-            val u = str.count { it == 'u' }
-            val d = str.count { it == 'd' }
+            val bend = when (str.getOrNull(1)) {
+                'u' -> +13
+                'U' -> +31
+                'd' -> -13
+                'D' -> -31
+                else -> +-0
+            }
+            println(str.take(1))
             val reg = RegularAccidental.map[str.take(1)]
-            return if (reg != null) if (u - d == 0) reg else BendedAccidental(reg, u - d)
-            else QuarterToneAccidental.map[str]!!
+            return when {
+                reg == null -> QuarterToneAccidental.map.getValue(str)
+                bend == 0 -> reg
+                else -> BendedAccidental(reg, bend)
+            }
         }
     }
 }
@@ -98,14 +108,8 @@ enum class RegularAccidental(val chromaticSteps: Int) : Accidental {
     override val bend: Int
         get() = 0
 
-    override fun toString(): String = when (this) {
-        Natural -> "n"
-        Flat -> "f"
-        Sharp -> "s"
-    }
-
     companion object {
-        val map = values().associateBy { it.toString() }
+        val map = values().associateBy { it.lilypond() }
     }
 }
 
@@ -115,31 +119,14 @@ enum class QuarterToneAccidental(override val reference: RegularAccidental, over
     TreeQuarterFlat(RegularAccidental.Flat, -50),
     TreeQuarterSharp(RegularAccidental.Sharp, +50);
 
-    override fun toString(): String = when (this) {
-        QuarterFlat -> "qf"
-        QuarterSharp -> "qs"
-        TreeQuarterFlat -> "tqf"
-        TreeQuarterSharp -> "tqs"
-    }
-
     companion object {
-        val map = values().associateBy { it.toString() }
+        val map = values().associateBy { it.lilypond() }
     }
 }
 
 @Serializable
 data class BendedAccidental(override val reference: RegularAccidental, override val bend: Int) : Accidental {
-    override fun toString(): String {
-        val suff = when (bend) {
-            in -39..-25 -> "D"
-            in -24..-6 -> "d"
-            in -5..+5 -> ""
-            in 6..24 -> "u"
-            in 25..39 -> "U"
-            else -> error("pitch bend out of range: $bend")
-        }
-        return "$reference$suff"
-    }
+    override fun toString(): String = if (bend < 0) "$reference$bend" else "$reference+${bend}ct"
 }
 
 @Serializable
@@ -287,7 +274,7 @@ sealed class AbstractElement : Element {
 }
 
 @Serializable
-data class ElementPhase(var end: Time, var targetPitch: Pitch, var targetDynamic: Dynamic)
+class ElementPhase(var end: Time, var targetPitch: Pitch, var targetDynamic: Dynamic)
 
 sealed interface ContinuousElement : Element {
     abstract override val type: Type<ContinuousElement>

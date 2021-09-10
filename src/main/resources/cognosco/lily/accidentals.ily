@@ -1,16 +1,15 @@
 \version "2.22.0"
 
 ekmTuning = #'(
-  (#x1A . 3/4)
-  (#x28 . 2/3)
-  (#x36 . 7/12)
-  (#x44 . 1/2)
-  (#x50 . 5/12)
-  (#xA0 . 1/3)
-  (#xAA . 1/4)
-  (#xAC . 1/6)
-  (#xB6 . 1/12)
-  (#xFF . 0)
+  (#x1A . 3/4) ;tqs/tqf
+  (#x28 . 2/3) ;s+31ct/f-31ct
+  (#x36 . 7/12) ;s+13ct/f-13ct
+  (#x44 . 1/2) ;s/f
+  (#x50 . 5/12) ;s-13ct/f+13ct
+  (#xA0 . 1/3) ;s-31ct/f+31ct
+  (#xAA . 1/4) ;qs/qf
+  (#xAC . 1/6) ;n+31ct/n-31ct
+  (#xB6 . 1/12) ;n+13ct/n-13ct
 )
 
 ekmLanguages = #'(
@@ -22,6 +21,46 @@ ekmLanguages = #'(
   (g 4 . 0)
   (a 5 . 0)
   (b 6 . 0)
+
+  (cn 0 . 0)
+  (dn 1 . 0)
+  (en 2 . 0)
+  (fn 3 . 0)
+  (gn 4 . 0)
+  (an 5 . 0)
+  (bn 6 . 0)
+
+  (cnu 0 . #xB6)
+  (dnu 1 . #xB6)
+  (enu 2 . #xB6)
+  (fnu 3 . #xB6)
+  (gnu 4 . #xB6)
+  (anu 5 . #xB6)
+  (bnu 6 . #xB6)
+
+  (cnd 0 . #xB7)
+  (dnd 1 . #xB7)
+  (end 2 . #xB7)
+  (fnd 3 . #xB7)
+  (gnd 4 . #xB7)
+  (and 5 . #xB7)
+  (bnd 6 . #xB7)
+
+  (cnU 0 . #xAC)
+  (dnU 1 . #xAC)
+  (enU 2 . #xAC)
+  (fnU 3 . #xAC)
+  (gnU 4 . #xAC)
+  (anU 5 . #xAC)
+  (bnU 6 . #xAC)
+
+  (cnD 0 . #xAD)
+  (dnD 1 . #xAD)
+  (enD 2 . #xAD)
+  (fnD 3 . #xAD)
+  (gnD 4 . #xAD)
+  (anD 5 . #xAD)
+  (bnD 6 . #xAD)
 
   (cs 0 . #x44)
   (ds 1 . #x44)
@@ -150,12 +189,12 @@ ekmNotations = #'(
   (#x45 #xE260)
   (#x50 #xE2C3)
   (#x51 #xE2C6)
-  (#xA0 #xE2D1)
-  (#xA1 #xE2CC)
+  (#xA0 #xE2CD)
+  (#xA1 #xE2D0)
   (#xAA #xE282)
   (#xAB #xE280)
-  (#xAC #xE2C7)
-  (#xAD #xE2C7)
+  (#xAC #xE2D1)
+  (#xAD #xE2CC)
   (#xB6 #xE2C7)
   (#xB7 #xE2C2)
 )))

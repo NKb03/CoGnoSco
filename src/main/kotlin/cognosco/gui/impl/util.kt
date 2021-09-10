@@ -1,5 +1,8 @@
 package cognosco.gui.impl
 
+import cognosco.Accidental
+import cognosco.gui.App
+import cognosco.lily.lilypond
 import javafx.application.Platform
 import javafx.event.EventTarget
 import javafx.scene.Node
@@ -7,12 +10,10 @@ import javafx.scene.control.Alert
 import javafx.scene.control.ToggleGroup
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
-import cognosco.Accidental
-import cognosco.gui.App
 import kotlin.concurrent.thread
 
 fun loadImage(acc: Accidental): Image {
-    val res = "accidentals/$acc.png"
+    val res = "accidentals/${acc.lilypond()}.png"
     return loadImage(res)
 }
 

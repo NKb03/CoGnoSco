@@ -25,6 +25,7 @@ class ScoreView(
     private val accidentalViews = mutableMapOf<Element, AccidentalView>()
     private val trillAccidentalViews = mutableMapOf<Trill, AccidentalView>()
     private val startDynamics = mutableMapOf<Element, DynamicView>()
+    private val phaseDynamics = mutableMapOf<ElementPhase, DynamicView>()
     private val pulseLine = createPulseLine()
 
     private var disposition: Disposition by Delegates.observable(Pointer()) { _, old, new ->
@@ -493,9 +494,15 @@ class ScoreView(
 
         override fun handleShortcut(ev: Shortcut) {
             if (ev == Enter && element.phases.isNotEmpty()) {
-                finished = true
-                disposition = CreateElement(head, null)
+                finish()
             }
+        }
+
+        private fun finish() {
+            val endDynamic = phaseDynamics.getValue(element.phases.last())
+            line.endXProperty().bind(endDynamic.xProperty())
+            finished = true
+            disposition = CreateElement(head, null)
         }
 
         override fun mouseClicked(ev: MouseEvent) {
@@ -505,6 +512,7 @@ class ScoreView(
             val phase = ElementPhase(getTime(x), element.pitch!!, dynamicsSelector.selected.value)
             element.phases.add(phase)
             val dynamic = DynamicView(xProp, head.yProperty(), phase::targetDynamic, phase::end)
+            phaseDynamics[phase] = dynamic
             add(element, dynamic)
             minX = x + BEAT_W
         }

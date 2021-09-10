@@ -5,7 +5,26 @@ import java.io.File
 
 private fun PitchName.lilypond(): String = name.lowercase()
 
-fun Accidental.lilypond() = if (this == RegularAccidental.Natural) "" else toString()
+fun Accidental.lilypond(): String = when (this) {
+    RegularAccidental.Natural -> "n"
+    RegularAccidental.Flat -> "f"
+    RegularAccidental.Sharp -> "s"
+    QuarterToneAccidental.QuarterFlat -> "qf"
+    QuarterToneAccidental.QuarterSharp -> "qs"
+    QuarterToneAccidental.TreeQuarterFlat -> "tqf"
+    QuarterToneAccidental.TreeQuarterSharp -> "tqs"
+    is BendedAccidental -> {
+        val suffix = when (bend) {
+            in -39..-25 -> "D"
+            in -24..-6 -> "d"
+            in -5..+5 -> ""
+            in 6..24 -> "u"
+            in 25..39 -> "U"
+            else -> error("pitch bend out of range: $bend")
+        }
+        "${reference.lilypond()}$suffix"
+    }
+}
 
 fun Pitch.lilypond(): String {
     val apostrophes = "'".repeat((register - 3).coerceAtLeast(0))

@@ -122,7 +122,7 @@ class App : Application() {
             Escape -> typeSelector.select(ElementTypeSelector.POINTER)
             SelectType -> typeSelector.receiveFocus()
             SelectInstrument -> instrumentSelector.receiveFocus()
-            SelectBend -> accidentalSelector.pitchBendSelector.receiveFocus()
+            SelectBend -> accidentalSelector.microtonalSelector.receiveFocus()
             SelectDynamic -> dynamicSelector.receiveFocus()
             Louder -> {
                 val selected = dynamicSelector.selected.value

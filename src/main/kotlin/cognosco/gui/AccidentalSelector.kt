@@ -1,49 +1,46 @@
 package cognosco.gui
 
-import javafx.beans.value.ObservableValue
-import javafx.scene.Node
-import javafx.scene.control.Button
-import javafx.scene.control.ToggleButton
-import javafx.scene.image.ImageView
-import javafx.scene.layout.HBox
 import cognosco.Accidental
 import cognosco.BendedAccidental
 import cognosco.QuarterToneAccidental
 import cognosco.RegularAccidental
-import cognosco.gui.impl.*
+import cognosco.gui.impl.binding
+import cognosco.gui.impl.fitHeight
+import cognosco.gui.impl.loadImage
+import cognosco.gui.impl.view
+import javafx.beans.value.ObservableValue
+import javafx.scene.Node
+import javafx.scene.control.ToggleButton
+import javafx.scene.layout.HBox
 
 class AccidentalSelector : HBox(5.0) {
     val regularAccidentalSelector = RegularAccidentalSelector()
-    val pitchBendSelector = StandardBendSelector()
-    private val resultView = ImageView()
+    val microtonalSelector = MicrotonalAccidentalSelector(RegularAccidental.Natural)
 
-    val selected: ObservableValue<Accidental> =
-        binding(regularAccidentalSelector.selected, pitchBendSelector.selected) { acc: RegularAccidental?, bend: Int? ->
-            makeMicroTonalAccidental(acc ?: RegularAccidental.Natural, bend ?: 0)
-        }
-
-    init {
-        resultView.imageProperty().bind(selected.map(::loadImage))
-        pitchBendSelector.select(+-0)
-        children.addAll(regularAccidentalSelector, pitchBendSelector, setupResultView())
+    val selected: ObservableValue<Accidental> = binding(
+        regularAccidentalSelector.selected,
+        microtonalSelector.selected
+    ) { acc: RegularAccidental?, bend: Int? ->
+        makeMicroTonalAccidental(acc ?: RegularAccidental.Natural, bend ?: 0)
     }
 
-    private fun setupResultView(): Button {
-        resultView.isPreserveRatio = true
-        resultView.fitHeight = 30.0
-        resultView.isSmooth = true
-        val container = Button(null, resultView)
-        container.prefWidth = 45.0
-        return container
+    init {
+        microtonalSelector.select(+-0)
+        regularAccidentalSelector.selected.addListener { _, _, reference ->
+            microtonalSelector.reference = reference
+        }
+        children.addAll(regularAccidentalSelector, microtonalSelector)
     }
 
     fun select(value: Accidental) {
         regularAccidentalSelector.select(value.reference)
-        pitchBendSelector.select(value.bend)
+        microtonalSelector.select(value.bend)
     }
 
     class RegularAccidentalSelector : SelectorBar<RegularAccidental>(RegularAccidental.values().asList()) {
         override fun extractGraphic(option: RegularAccidental): Node = loadImage(option).view().fitHeight(30.0)
+
+        override fun extractDescription(option: RegularAccidental): String = option.toString()
 
         override fun ToggleButton.extraConfig(option: RegularAccidental) {
             prefWidth = 45.0
@@ -51,8 +48,25 @@ class AccidentalSelector : HBox(5.0) {
         }
     }
 
-    class StandardBendSelector : SelectorBar<Int>(STANDARD_BENDS) {
-        override fun extractText(option: Int): String = option.toStringSigned()
+    class MicrotonalAccidentalSelector(ref: RegularAccidental) : SelectorBar<Int>(STANDARD_BENDS) {
+        var reference: RegularAccidental = ref
+            set(value) {
+                field = value
+                reload()
+            }
+            get() = field
+
+        override fun extractGraphic(option: Int): Node {
+            val acc = makeMicroTonalAccidental(reference, option)
+            return loadImage(acc).view().fitHeight(30.0)
+        }
+
+        override fun extractDescription(option: Int): String = makeMicroTonalAccidental(reference, option).toString()
+
+        override fun ToggleButton.extraConfig(option: Int) {
+            prefWidth = 45.0
+            prefHeight = 40.0
+        }
     }
 
     companion object {
@@ -71,12 +85,6 @@ class AccidentalSelector : HBox(5.0) {
                 RegularAccidental.Sharp -> QuarterToneAccidental.TreeQuarterSharp
             }
             else -> BendedAccidental(reference, bend)
-        }
-
-        private fun Int.toStringSigned() = when {
-            this < 0 -> toString()
-            this == 0 -> "\u00B10"
-            else -> "+$this"
         }
     }
 }

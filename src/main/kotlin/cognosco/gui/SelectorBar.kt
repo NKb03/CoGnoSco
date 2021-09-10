@@ -1,5 +1,7 @@
 package cognosco.gui
 
+import cognosco.gui.impl.dontDeselectAll
+import cognosco.gui.impl.map
 import javafx.beans.value.ObservableValue
 import javafx.geometry.Insets
 import javafx.scene.Node
@@ -8,8 +10,6 @@ import javafx.scene.control.ToggleGroup
 import javafx.scene.control.Tooltip
 import javafx.scene.layout.HBox
 import org.controlsfx.control.SegmentedButton
-import cognosco.gui.impl.dontDeselectAll
-import cognosco.gui.impl.map
 
 abstract class SelectorBar<T>(vararg options: List<T>) : HBox(10.0) {
     protected open fun extractGraphic(option: T): Node? = null
@@ -39,19 +39,30 @@ abstract class SelectorBar<T>(vararg options: List<T>) : HBox(10.0) {
     private fun createSegment(group: List<T>): SegmentedButton {
         val seg = SegmentedButton()
         for (option in group) {
-            val btn = ToggleButton(this.extractText(option), this.extractGraphic(option))
+            val btn = ToggleButton()
             map[option] = btn
             allButtons.add(btn)
             btn.userData = option
-            btn.tooltip = this.extractDescription(option)?.let(::Tooltip)
-            if (btn.graphic == null) btn.padding = Insets(11.0)
-            @Suppress("LeakingThis")
-            btn.extraConfig(option)
-            seg.padding = seg.padding
+            btn.display(option)
             seg.buttons.add(btn)
         }
         seg.styleClass.add("dark")
         return seg
+    }
+
+    private fun ToggleButton.display(option: T) {
+        text = extractText(option)
+        graphic = extractGraphic(option)
+        tooltip = this@SelectorBar.extractDescription(option)?.let(::Tooltip)
+        if (graphic == null) padding = Insets(11.0)
+        @Suppress("LeakingThis")
+        extraConfig(option)
+    }
+
+    fun reload() {
+        for ((option, btn) in map) {
+            btn.display(option)
+        }
     }
 
     fun select(option: T) {
