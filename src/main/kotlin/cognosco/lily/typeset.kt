@@ -3,23 +3,12 @@ package cognosco.lily
 import cognosco.*
 import java.io.File
 
-private fun Accidental.lilypond(): String = when (this) {
-    RegularAccidental.Natural -> ""
-    RegularAccidental.Flat -> "es"
-    RegularAccidental.Sharp -> "is"
-    QuarterToneAccidental.QuarterFlat -> "eh"
-    QuarterToneAccidental.QuarterSharp -> "ih"
-    QuarterToneAccidental.TreeQuarterFlat -> "eseh"
-    QuarterToneAccidental.TreeQuarterSharp -> "isih"
-    is BendedAccidental -> TODO()
-}
-
 private fun PitchName.lilypond(): String = name.lowercase()
 
 fun Pitch.lilypond(): String {
     val apostrophes = "'".repeat((register - 3).coerceAtLeast(0))
     val commas = ",".repeat((3 - register).coerceAtLeast(0))
-    return "${name.lilypond()}${accidental.lilypond()}$apostrophes$commas!"
+    return "${name.lilypond()}$accidental$apostrophes$commas!"
 }
 
 fun Dynamic.lilypond(): String = "\\${name.lowercase()}"
@@ -119,6 +108,8 @@ private fun LilypondWriter.typesetPart(staff: Staff, part: Part, score: Score) =
 
 private fun LilypondWriter.typesetScore(score: Score) {
     include("preamble.ily")
+    include("accidentals.ily")
+    include("ekmel-main.ily")
     for (staff in score.orchestra.staffs) {
         val part = score.parts.getValue(staff)
         val name = staff.partName()

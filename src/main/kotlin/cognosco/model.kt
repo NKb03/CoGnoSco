@@ -130,20 +130,15 @@ enum class QuarterToneAccidental(override val reference: RegularAccidental, over
 @Serializable
 data class BendedAccidental(override val reference: RegularAccidental, override val bend: Int) : Accidental {
     override fun toString(): String {
-        val arr = centToArrows(bend)
-        val suff = "u".repeat(arr.coerceAtLeast(0)) + "d".repeat((-arr).coerceAtLeast(0))
-        return "$reference$suff"
-    }
-
-    companion object {
-        private fun centToArrows(bend: Int) = when (bend) {
-            in -39..-25 -> -2
-            in -24..-6 -> -1
-            in -5..+5 -> 0
-            in 6..24 -> 1
-            in 25..39 -> 2
+        val suff = when (bend) {
+            in -39..-25 -> "D"
+            in -24..-6 -> "d"
+            in -5..+5 -> ""
+            in 6..24 -> "u"
+            in 25..39 -> "U"
             else -> error("pitch bend out of range: $bend")
         }
+        return "$reference$suff"
     }
 }
 
