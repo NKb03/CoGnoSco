@@ -144,7 +144,8 @@ class App : Application() {
             Open -> open()
             Save -> save()
             New -> new()
-            Play -> playOrStop()
+            Play -> playOrPause()
+            Stop -> player.stop()
             Typeset -> typeset()
             else -> scoreView.handleShortcut(shortcut)
         }
@@ -200,7 +201,7 @@ class App : Application() {
         }.setUncaughtExceptionHandler { _, exc -> handleUncaughtException(exc) }
     }
 
-    private fun playOrStop() {
+    private fun playOrPause() {
         if (!player.isPlaying) {
             player.setEvents(scoreView.getScore().createEvents(midiOutput))
             player.play()

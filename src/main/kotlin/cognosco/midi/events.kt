@@ -23,7 +23,7 @@ fun GraphicalScore.createEvents(output: MidiOutput): List<Event> =
     elements.flatMap { el ->
         output.eventList {
             at(el.start * PULSES_PER_BEAT) {
-                noteOn(el.instrument!!, el.pitch, el.startDynamic!!)
+                noteOn(el.instrument!!, el.pitch, el.startDynamic)
                 when {
                     el is Trill -> trill(el.secondaryPitch!!)
                     el.type == SimplePitchedContinuousElement.FastRepeat -> tremolo(4)
@@ -33,17 +33,12 @@ fun GraphicalScore.createEvents(output: MidiOutput): List<Event> =
                 }
             }
             if (el is ContinuousElement) {
-                at(el.start * PULSES_PER_BEAT) {
-                    gradualVolumeChange(
-                        el.climax * PULSES_PER_BEAT,
-                        el.climaxDynamic!!
-                    )
-                }
-                at(el.climax * PULSES_PER_BEAT) {
-                    gradualVolumeChange(
-                        el.end * PULSES_PER_BEAT,
-                        el.endDynamic!!
-                    )
+                var start = el.start
+                for (phase in el.phases) {
+                    at(start * PULSES_PER_BEAT) {
+                        gradualVolumeChange(phase.end, phase.targetDynamic)
+                    }
+                    start = phase.end
                 }
             }
             at(el.end * PULSES_PER_BEAT) { noteOff() }

@@ -1,5 +1,7 @@
 package cognosco.gui
 
+import cognosco.Dynamic
+import cognosco.Time
 import javafx.beans.binding.Bindings
 import javafx.beans.property.Property
 import javafx.beans.value.ObservableNumberValue
@@ -8,14 +10,12 @@ import javafx.scene.text.Font
 import javafx.scene.text.FontPosture
 import javafx.scene.text.FontWeight
 import javafx.scene.text.Text
-import cognosco.Dynamic
-import cognosco.Time
 import kotlin.reflect.KMutableProperty0
 
 class DynamicView(
     referenceX: Property<Number>,
     referenceY: ObservableNumberValue,
-    private val dynamicProperty: KMutableProperty0<Dynamic?>,
+    private val dynamicProperty: KMutableProperty0<Dynamic>,
     timeProperty: KMutableProperty0<Time>,
 ) : SelectableElement, Text() {
     init {
@@ -27,7 +27,7 @@ class DynamicView(
         isFocusTraversable = true
     }
 
-    var dynamic: Dynamic?
+    var dynamic: Dynamic
         get() = dynamicProperty.get()
         set(value) {
             dynamicProperty.set(value)

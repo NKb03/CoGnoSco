@@ -61,7 +61,7 @@ class MidiPlayer(private val output: MidiOutput) {
 
     @Synchronized
     fun stop() {
-        pause()
+        if (isPlaying) pause()
         currentPulse = 0
     }
 

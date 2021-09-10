@@ -1,5 +1,6 @@
 .gradle
 **/build/
+dist
 !src/**/build/
 !gradle-wrapper.jar
 .gradletasknamecache

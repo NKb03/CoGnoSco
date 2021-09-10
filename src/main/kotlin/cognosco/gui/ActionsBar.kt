@@ -29,6 +29,7 @@ class ActionsBar : HBox(5.0) {
         Save("Datei speichern", Shortcut.Save, FontAwesome.Glyph.SAVE),
         New("Neue Datei erstellen", Shortcut.New, FontAwesome.Glyph.PLUS),
         Play("Play/Pause", Shortcut.Play, FontAwesome.Glyph.PLAY),
+        Stop("Stop", Shortcut.Stop, FontAwesome.Glyph.STOP),
         Typeset("Partitur setzen", Shortcut.Typeset, FontAwesome.Glyph.PRINT);
 
         val description = "$desc ($shortcut)"

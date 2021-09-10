@@ -5,10 +5,10 @@ import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyCombination
 import javafx.scene.input.KeyEvent
 
-sealed class Shortcut(private val str: String) {
-    private val keyCombination = KeyCombination.keyCombination(str)!!
+sealed class Shortcut(private vararg val shortcuts: String) {
+    private val keyCombinations = shortcuts.map { KeyCombination.valueOf(it)!! }
 
-    override fun toString(): String = str
+    override fun toString(): String = shortcuts.joinToString(" | ")
 
     object Escape : Shortcut("ESCAPE")
     object Delete : Shortcut("DELETE")
@@ -28,9 +28,10 @@ sealed class Shortcut(private val str: String) {
     object Natural : Shortcut("N")
     object Save : Shortcut("Ctrl+S")
     object New : Shortcut("Ctrl+N")
-    object Play : Shortcut("SPACE")
+    object Play : Shortcut("SPACE", "PLAY", "PAUSE")
+    object Stop : Shortcut("STOP")
     object Typeset : Shortcut("Ctrl+P")
-    object Open: Shortcut("Ctrl+O")
+    object Open : Shortcut("Ctrl+O")
     data class Digit(val value: Int) : Shortcut("$value")
 
     companion object {
@@ -48,7 +49,7 @@ sealed class Shortcut(private val str: String) {
                 val value = ev.code.toString().removePrefix("DIGIT").toInt()
                 return Digit(value)
             }
-            return shortcuts.find { it.keyCombination.match(ev) }
+            return shortcuts.find { s -> s.keyCombinations.any { comb -> comb.match(ev) } }
         }
 
         fun listen(target: Scene, block: (shortcut: Shortcut) -> Unit) =

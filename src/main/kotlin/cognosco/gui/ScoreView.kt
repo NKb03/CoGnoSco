@@ -1,5 +1,9 @@
 package cognosco.gui
 
+import cognosco.*
+import cognosco.gui.Shortcut.*
+import cognosco.gui.impl.*
+import cognosco.midi.PULSES_PER_BEAT
 import javafx.beans.binding.Bindings
 import javafx.beans.property.SimpleDoubleProperty
 import javafx.scene.Node
@@ -7,10 +11,6 @@ import javafx.scene.input.MouseEvent
 import javafx.scene.layout.Pane
 import javafx.scene.paint.Color
 import javafx.scene.shape.Line
-import cognosco.*
-import cognosco.gui.Shortcut.*
-import cognosco.gui.impl.*
-import cognosco.midi.PULSES_PER_BEAT
 import kotlin.properties.Delegates
 
 class ScoreView(
@@ -130,14 +130,16 @@ class ScoreView(
         for (line in ledgerLines) {
             add(element, line)
         }
-        if (element is ContinuousElement && element.climax != 0 && element.end != 0) {
+        if (element is ContinuousElement && element.phases.isNotEmpty()) {
+            lateinit var phaseTarget: DynamicView
+            for (phase in element.phases) {
+                val x = SimpleDoubleProperty(phase.end.toXCoordinate())
+                phaseTarget = DynamicView(x, head.yProperty(), phase::targetDynamic, phase::end)
+                add(element, phaseTarget)
+            }
             val line = createDurationLine(element, head)
-            val climaxX = SimpleDoubleProperty(element.climax.toXCoordinate())
-            val climax = DynamicView(climaxX, head.yProperty(), element::climaxDynamic, element::climax)
-            val endX = SimpleDoubleProperty(element.end.toXCoordinate())
-            val end = DynamicView(endX, head.yProperty(), element::endDynamic, element::end)
-            line.endXProperty().bind(Bindings.add(end.xProperty(), 10))
-            add(element, line.shape, climax, end)
+            line.endXProperty().bind(Bindings.add(phaseTarget.xProperty(), 10))
+            add(element, line.shape)
         }
         if (element is Trill && element.secondaryPitch != null) {
             val littleHead = NoteHead(element).scale(SECONDARY_PITCH_SCALE)
@@ -354,7 +356,7 @@ class ScoreView(
             selected = element
             element?.isSelected = true
             when (element) {
-                is DynamicView -> element.dynamic?.let { dynamicsSelector.select(it) }
+                is DynamicView -> element.dynamic.let { dynamicsSelector.select(it) }
                 is NoteHead -> {
                     val el = element.element ?: return
                     el.instrument?.let { instrumentSelector.select(it) }
@@ -489,25 +491,22 @@ class ScoreView(
             }
         }
 
+        override fun handleShortcut(ev: Shortcut) {
+            if (ev == Enter && element.phases.isNotEmpty()) {
+                finished = true
+                disposition = CreateElement(head, null)
+            }
+        }
+
         override fun mouseClicked(ev: MouseEvent) {
             var (x, _) = normalizeCoords(ev)
             x = x.coerceAtLeast(minX)
             val xProp = SimpleDoubleProperty(x)
-            if (element.climax == 0) {
-                element.climax = getTime(x)
-                element.climaxDynamic = dynamicsSelector.selected.value
-                val dynamic = DynamicView(xProp, head.yProperty(), element::climaxDynamic, element::climax)
-                add(element, dynamic)
-                minX = x + BEAT_W
-            } else {
-                element.end = getTime(x)
-                element.endDynamic = dynamicsSelector.selected.value
-                val dynamic = DynamicView(xProp, head.yProperty(), element::endDynamic, element::end)
-                line.endXProperty().bind(dynamic.xProperty())
-                add(element, dynamic)
-                finished = true
-                disposition = CreateElement(head, null)
-            }
+            val phase = ElementPhase(getTime(x), element.pitch!!, dynamicsSelector.selected.value)
+            element.phases.add(phase)
+            val dynamic = DynamicView(xProp, head.yProperty(), phase::targetDynamic, phase::end)
+            add(element, dynamic)
+            minX = x + BEAT_W
         }
 
         override fun deleteElement() {

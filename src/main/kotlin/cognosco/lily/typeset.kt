@@ -5,10 +5,12 @@ import java.io.File
 
 private fun PitchName.lilypond(): String = name.lowercase()
 
+fun Accidental.lilypond() = if (this == RegularAccidental.Natural) "" else toString()
+
 fun Pitch.lilypond(): String {
     val apostrophes = "'".repeat((register - 3).coerceAtLeast(0))
     val commas = ",".repeat((3 - register).coerceAtLeast(0))
-    return "${name.lilypond()}$accidental$apostrophes$commas!"
+    return "${name.lilypond()}${accidental.lilypond()}$apostrophes$commas!"
 }
 
 fun Dynamic.lilypond(): String = "\\${name.lowercase()}"
@@ -37,10 +39,10 @@ private fun getTechnique(type: Element.Type<Element>, instrument: Instrument) = 
 private fun ElementTypesetter.typesetElement(element: Element, instrument: Instrument) {
     technique = getTechnique(element.type, instrument)
     val pitch = if (element is PitchedElement) element.pitch else instrument.clef.middleLinePitch!!
-     if (element is Trill) {
+    if (element is Trill) {
         addNote(pitch, "16")
         append("\\trill")
-        addDynamic(element.startDynamic!!)
+        addDynamic(element.startDynamic)
         magnifyMusic(0.6)
         +"\\parenthesize"
         addNote(element.secondaryPitch!!, "16", duration = 0)
@@ -59,15 +61,16 @@ private fun ElementTypesetter.typesetElement(element: Element, instrument: Instr
             }
         } else "8"
         addNote(pitch, type)
-        addDynamic(element.startDynamic!!)
+        addDynamic(element.startDynamic)
     }
     if (element is ContinuousElement) {
-        addCrescendo()
-        addRestTo(element.climax, endDynamic = true, hide = true)
-        addDynamic(element.climaxDynamic!!, force = true)
-        addDecrescendo()
-        addRestTo(element.end, endDynamic = true, hide = true)
-        addDynamic(element.endDynamic!!, force = true)
+        var lastDynamic = element.startDynamic
+        for (phase in element.phases) {
+            if (phase.targetDynamic > lastDynamic) addCrescendo() else addDecrescendo()
+            addRestTo(phase.end, endDynamic = true, hide = true)
+            addDynamic(phase.targetDynamic, force = true)
+            lastDynamic = phase.targetDynamic
+        }
     }
 }
 
@@ -96,14 +99,21 @@ private fun LilypondWriter.typesetGroup(group: InstrumentGroup) {
     }
 }
 
-private fun LilypondWriter.typesetPart(staff: Staff, part: Part, score: Score) = (ElementTypesetter(this)) {
-    +"\\clef ${staff.instrument.clef.lilypond()}"
-    for (element in part.elements) {
-        val start = element.start
-        addRestTo(start)
-        typesetElement(element, staff.instrument)
+private fun LilypondWriter.typesetPart(staff: Staff, part: Part, score: Score) = with(ElementTypesetter(this)) {
+    val instr = staff.instrument
+    val transpose =
+        if (instr.family != InstrumentFamily.Percussion && instr.transposition != "c'")
+            "\\transpose ${instr.transposition} c'"
+        else ""
+    transpose {
+        +"\\clef ${instr.clef.lilypond()}"
+        for (element in part.elements) {
+            val start = element.start
+            addRestTo(start)
+            typesetElement(element, instr)
+        }
+        addRestTo(score.duration)
     }
-    addRestTo(score.duration)
 }
 
 private fun LilypondWriter.typesetScore(score: Score) {

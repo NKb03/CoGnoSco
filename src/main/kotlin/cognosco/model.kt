@@ -40,26 +40,26 @@ enum class Instrument(
     val shortName: String,
     val family: InstrumentFamily,
     val clef: Clef,
-    val transpose: Int,
+    val transposition: String,
     val program: Int,
     val percussionKey: Int? = null
 ) {
-    Flute("Flöte", "Fl.", Woodwinds, Clef.Violin, 0, 74),
-    Oboe("Oboe", "Ob.", Woodwinds, Clef.Violin, 0, 69),
-    Clarinet("B♭ Klarinette", "B♭ Kl.", Woodwinds, Clef.Violin, +2, 72),
-    Saxophone("Sopransaxophon", "S.sax.", Woodwinds, Clef.Violin, +2, 65),
-    Horn("F Horn", "F Hn.", Woodwinds, Clef.Bass, +6, 61),
-    Trumpet("B♭ Trompete", "B♭ Tpt.", Brass, Clef.Violin, +2, 57),
-    Trombone("Posaune", "Pos.", Brass, Clef.Bass, 0, 58),
-    Tuba("Tuba", "Tba.", Brass, Clef.Bass, 0, 59),
-    Timpani("Pauke", "Pk.", InstrumentFamily.Timpani, Clef.Bass, 0, 48),
-    SnareDrum("Snare Drum", "Sn.Dr.", Percussion, Clef.Percussion, 0, 10, 38),
-    BassDrum("Bass Drum", "B.Dr.", Percussion, Clef.Percussion, 0, 10, 36),
-    Cymbal("Becken", "Bck.", Percussion, Clef.Percussion, 0, 10, 49),
-    Violins("Violinen", "Vl.", Strings, Clef.Violin, 0, 41),
-    Violas("Viola", "Vla.", Strings, Clef.Alto, 0, 42),
-    Violoncellos("Violoncello", "Vc.", Strings, Clef.Bass, 0, 43),
-    Contrabasses("Kontrabass", "Kb.", Strings, Clef.Bass, +8, 44)
+    Flute("Flöte", "Fl.", Woodwinds, Clef.Violin, "c'", 74),
+    Oboe("Oboe", "Ob.", Woodwinds, Clef.Violin, "c'", 69),
+    Clarinet("B♭ Klarinette", "B♭ Kl.", Woodwinds, Clef.Violin, "bf", 72),
+    Saxophone("Sopransaxophon", "S.sax.", Woodwinds, Clef.Violin, "bf", 65),
+    Horn("F Horn", "F Hn.", Woodwinds, Clef.Bass, "f", 61),
+    Trumpet("B♭ Trompete", "B♭ Tpt.", Brass, Clef.Violin, "bf", 57),
+    Trombone("Posaune", "Pos.", Brass, Clef.Bass, "c'", 58),
+    Tuba("Tuba", "Tba.", Brass, Clef.Bass, "c'", 59),
+    Timpani("Pauke", "Pk.", InstrumentFamily.Timpani, Clef.Bass, "c'", 48),
+    SnareDrum("Snare Drum", "Sn.Dr.", Percussion, Clef.Percussion, "", 10, 38),
+    BassDrum("Bass Drum", "B.Dr.", Percussion, Clef.Percussion, "", 10, 36),
+    Cymbal("Becken", "Bck.", Percussion, Clef.Percussion, "", 10, 49),
+    Violins("Violinen", "Vl.", Strings, Clef.Violin, "c'", 41),
+    Violas("Viola", "Vla.", Strings, Clef.Alto, "c'", 42),
+    Violoncellos("Violoncello", "Vc.", Strings, Clef.Bass, "c'", 43),
+    Contrabasses("Kontrabass", "Kb.", Strings, Clef.Bass, "c", 44)
 }
 
 enum class PitchName(val chromaticStep: Int) {
@@ -187,7 +187,7 @@ sealed interface Element {
     val type: Type<Element>
     var instrument: Instrument?
     var start: Time
-    var startDynamic: Dynamic?
+    var startDynamic: Dynamic
     var customY: Double?
     val end: Time
     val pitch: Pitch? get() = null
@@ -277,7 +277,7 @@ sealed interface PitchedElement : Element {
 
 sealed class AbstractElement : Element {
     override var start: Time = 0
-    override var startDynamic: Dynamic? = null
+    override var startDynamic: Dynamic = Dynamic.MF
     override var instrument: Instrument? = null
     override var customY: Double? = null
     override val end: Time
@@ -286,21 +286,19 @@ sealed class AbstractElement : Element {
     override fun toString(): String = "$type: $start ($startDynamic)"
 }
 
+@Serializable
+data class ElementPhase(var end: Time, var targetPitch: Pitch, var targetDynamic: Dynamic)
+
 sealed interface ContinuousElement : Element {
     abstract override val type: Type<ContinuousElement>
 
-    var climax: Time
-    override var end: Time
-    var climaxDynamic: Dynamic?
-    var endDynamic: Dynamic?
+    var phases: MutableList<ElementPhase>
 
     override fun copyFrom(original: Element) {
         super.copyFrom(original)
         if (original is ContinuousElement) {
-            climax = original.climax
-            end = original.end
-            climaxDynamic = original.climaxDynamic
-            endDynamic = original.endDynamic
+            phases.clear()
+            phases.addAll(original.phases)
         }
     }
 
@@ -310,10 +308,10 @@ sealed interface ContinuousElement : Element {
 }
 
 sealed class AbstractContinuousElement : ContinuousElement, AbstractElement() {
-    override var climax: Time = 0
-    override var end: Time = 0
-    override var climaxDynamic: Dynamic? = null
-    override var endDynamic: Dynamic? = null
+    override var phases: MutableList<ElementPhase> = mutableListOf()
+
+    override val end: Time
+        get() = phases.last().end
 
     override fun copyFrom(original: Element) {
         super<ContinuousElement>.copyFrom(original)
@@ -338,8 +336,7 @@ sealed class PitchedContinuousElement : ContinuousElement, PitchedElement, Abstr
 class SimplePitchedContinuousElement(
     override val type: Type,
 ) : PitchedContinuousElement() {
-    override fun toString(): String = "${type.id} $pitch (${instrument?.shortName}): " +
-            "$start ($startDynamic) - $climax ($climaxDynamic) - $end ($endDynamic)"
+    override fun toString(): String = "${type.id} $pitch (${instrument?.shortName}), $start, ($startDynamic)"
 
 
     sealed class Type(id: String, description: String) :
@@ -370,8 +367,8 @@ class SimplePitchedContinuousElement(
 class Trill : PitchedContinuousElement() {
     var secondaryPitch: Pitch? = null
 
-    override fun toString(): String = "tr $pitch ($secondaryPitch) gespielt von ${instrument?.shortName}: " +
-            "$start ($startDynamic) - $climax ($climaxDynamic) - $end ($endDynamic)"
+    override fun toString(): String =
+        "tr $pitch ($secondaryPitch) gespielt von ${instrument?.shortName}, $start, ($startDynamic)"
 
     override fun copyFrom(original: Element) {
         super.copyFrom(original)
@@ -392,7 +389,7 @@ class Trill : PitchedContinuousElement() {
 
 open class ContinuousNoise(override val type: Type) : ContinuousElement, AbstractContinuousElement() {
     override fun toString(): String =
-        "${type.id} (${instrument?.shortName}): $start ($startDynamic) - $climax ($climaxDynamic) - $end($endDynamic)"
+        "${type.id} (${instrument?.shortName}), $start ($startDynamic)"
 
     sealed class Type(override val id: String, override val description: String) :
         ContinuousElement.Type<ContinuousNoise> {
