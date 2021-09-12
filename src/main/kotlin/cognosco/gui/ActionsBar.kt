@@ -4,6 +4,7 @@ import javafx.scene.control.Button
 import javafx.scene.control.Tooltip
 import javafx.scene.layout.HBox
 import org.controlsfx.glyphfont.FontAwesome
+import org.controlsfx.glyphfont.FontAwesome.Glyph
 
 class ActionsBar : HBox(5.0) {
     private var onAction: (Action) -> Unit = {}
@@ -24,13 +25,16 @@ class ActionsBar : HBox(5.0) {
         }
     }
 
-    enum class Action(desc: String, val shortcut: Shortcut, val glyph: FontAwesome.Glyph) {
-        Open("Datei öffnen", Shortcut.Open, FontAwesome.Glyph.FOLDER_OPEN),
-        Save("Datei speichern", Shortcut.Save, FontAwesome.Glyph.SAVE),
-        New("Neue Datei erstellen", Shortcut.New, FontAwesome.Glyph.PLUS),
-        Play("Play/Pause", Shortcut.Play, FontAwesome.Glyph.PLAY),
-        Stop("Stop", Shortcut.Stop, FontAwesome.Glyph.STOP),
-        Typeset("Partitur setzen", Shortcut.Typeset, FontAwesome.Glyph.PRINT);
+    enum class Action(desc: String, val shortcut: Shortcut, val glyph: Glyph) {
+        Open("Datei öffnen", Shortcut.Open, Glyph.FOLDER_OPEN),
+        Save("Datei speichern", Shortcut.Save, Glyph.SAVE),
+        New("Neue Datei erstellen", Shortcut.New, Glyph.PLUS),
+        Play("Play/Pause", Shortcut.Play, Glyph.PLAY),
+        Stop("Stop", Shortcut.Stop, Glyph.STOP),
+        Typeset("Partitur setzen", Shortcut.Typeset, Glyph.PRINT),
+        ZoomIn("Hereinzoomen", Shortcut.ZoomIn, Glyph.SEARCH_PLUS),
+        ZoomOut("Herauszoomen", Shortcut.ZoomOut, Glyph.SEARCH_MINUS)
+        ;
 
         val description = "$desc ($shortcut)"
     }

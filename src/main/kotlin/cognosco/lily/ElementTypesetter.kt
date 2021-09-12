@@ -1,8 +1,8 @@
 package cognosco.lily
 
 import cognosco.Dynamic
-import cognosco.Time
 import cognosco.Pitch
+import cognosco.Time
 
 class ElementTypesetter(private val writer: LilypondWriter) : LilypondWriter by writer {
     private var techniqueIsNew = false
@@ -60,10 +60,15 @@ class ElementTypesetter(private val writer: LilypondWriter) : LilypondWriter by 
     fun addNote(pitch: Pitch, type: String = "8", duration: Time = 1) {
         appendLine()
         if (duration != 0 && currentTime != 0 && currentTime % 2 == 0) append("| ")
-        if (techniqueIsNew || technique.everyNote) append(technique.beforeNote)
+        if (techniqueIsNew || technique.everyNote) {
+            append(technique.beforeNote)
+        }
         append(pitch.lilypond())
         append(type)
-        if (techniqueIsNew || technique.everyNote) append(technique.afterNote)
+        if (techniqueIsNew || technique.everyNote) {
+            append(technique.afterNote)
+            techniqueIsNew = false
+        }
         currentTime += duration
     }
 

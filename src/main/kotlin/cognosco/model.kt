@@ -88,7 +88,6 @@ sealed interface Accidental {
                 'D' -> -31
                 else -> +-0
             }
-            println(str.take(1))
             val reg = RegularAccidental.map[str.take(1)]
             return when {
                 reg == null -> QuarterToneAccidental.map.getValue(str)
@@ -190,10 +189,10 @@ sealed interface Element {
 
     fun serialize(): JsonElement = buildJsonObject {
         val element = this@Element
-        put("type", JsonPrimitive(type.id))
+        put("type", JsonPrimitive(element.type.id))
         @Suppress("UNCHECKED_CAST")
         for (prop in element::class.memberProperties as List<KProperty1<Element, Any?>>) {
-            if (prop !is KMutableProperty1) continue
+            if (prop !is KMutableProperty1 || prop.name == "type") continue
             val value = prop.get(element) ?: continue
             if (value == 0 || value == 0.0) continue
             val serializer = serializer(prop.returnType)
@@ -206,7 +205,7 @@ sealed interface Element {
     fun deserialize(obj: JsonObject) {
         @Suppress("UNCHECKED_CAST")
         for (prop in this::class.memberProperties as List<KProperty1<Element, Any?>>) {
-            if (prop !is KMutableProperty1) continue
+            if (prop !is KMutableProperty1 || prop.name == "type") continue
             val value = obj[prop.name] ?: continue
             val serializer = serializer(prop.returnType)
             val decoded = json.decodeFromJsonElement(serializer, value)

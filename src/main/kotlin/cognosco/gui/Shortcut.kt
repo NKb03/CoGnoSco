@@ -32,6 +32,8 @@ sealed class Shortcut(private vararg val shortcuts: String) {
     object Stop : Shortcut("STOP")
     object Typeset : Shortcut("Ctrl+P")
     object Open : Shortcut("Ctrl+O")
+    object ZoomIn : Shortcut("Ctrl+PLUS")
+    object ZoomOut : Shortcut("Ctrl+MINUS")
     data class Digit(val value: Int) : Shortcut("$value")
 
     companion object {
@@ -40,7 +42,8 @@ sealed class Shortcut(private vararg val shortcuts: String) {
             SelectType, SelectInstrument, SelectDynamic, SelectBend,
             Louder, Quieter,
             Sharp, Flat, Natural,
-            Open, Save, New, Play, Typeset
+            Open, Save, New, Play, Typeset,
+            ZoomIn, ZoomOut
         )
 
         fun getShortcut(ev: KeyEvent): Shortcut? {

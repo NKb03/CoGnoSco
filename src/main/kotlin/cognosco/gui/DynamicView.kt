@@ -3,7 +3,6 @@ package cognosco.gui
 import cognosco.Dynamic
 import cognosco.Time
 import javafx.beans.binding.Bindings
-import javafx.beans.property.Property
 import javafx.beans.value.ObservableNumberValue
 import javafx.scene.paint.Color
 import javafx.scene.text.Font
@@ -13,7 +12,7 @@ import javafx.scene.text.Text
 import kotlin.reflect.KMutableProperty0
 
 class DynamicView(
-    referenceX: Property<Number>,
+    referenceX: ObservableNumberValue,
     referenceY: ObservableNumberValue,
     private val dynamicProperty: KMutableProperty0<Dynamic>,
     timeProperty: KMutableProperty0<Time>,
@@ -22,7 +21,7 @@ class DynamicView(
         font = Font.font("System", FontWeight.BOLD, FontPosture.ITALIC, 12.0)
         text = dynamicProperty.get().toString()
         translateX = (3 - text.length) * 3.0
-        xProperty().bindBidirectional(referenceX)
+        xProperty().bind(referenceX)
         yProperty().bind(Bindings.add(referenceY, 25))
         isFocusTraversable = true
     }

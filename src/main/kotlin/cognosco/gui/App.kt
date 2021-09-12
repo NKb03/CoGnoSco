@@ -227,7 +227,7 @@ class App : Application() {
         }
         val stave = HBox(ScoreView.Clefs(), ScrollPane(scoreView).apply {
             prefWidth = stage.width - 130.0
-            prefHeight = scoreView.prefHeight + 20
+            prefHeightProperty().bind(scoreView.prefHeightProperty().add(20))
         })
         val layout = VBox(bar, stave)
         stage.scene.root = layout
