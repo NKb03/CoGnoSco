@@ -1,11 +1,11 @@
 package cognosco.gui
 
-import javafx.beans.property.DoubleProperty
-import javafx.scene.paint.Color
-import javafx.scene.shape.*
 import cognosco.Element
 import cognosco.NoteHeadType
 import cognosco.gui.impl.NodeWrapper
+import javafx.beans.property.DoubleProperty
+import javafx.scene.paint.Color
+import javafx.scene.shape.*
 
 class NoteHead(val element: Element? = null) : NodeWrapper<Shape>(), SelectableElement {
     var noteHeadType = NoteHeadType.Regular
@@ -43,6 +43,8 @@ class NoteHead(val element: Element? = null) : NodeWrapper<Shape>(), SelectableE
     fun inCreation() = fill(Color.GREEN)
 
     fun phantom() = fill(Color.gray(0.0, 0.5))
+
+    fun lastCreated() = fill(Color.PURPLE)
 
     override var isSelected: Boolean = false
         set(value) {

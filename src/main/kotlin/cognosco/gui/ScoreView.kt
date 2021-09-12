@@ -261,13 +261,20 @@ class ScoreView(
     }
 
     private abstract inner class EditElement : Disposition() {
-        protected abstract fun <T : Any> withElement(block: (element: Element, head: NoteHead) -> T): T?
+        protected open fun withElement(block: (element: Element, head: NoteHead) -> Unit) {
+            tryWithElement { element, head -> block(element, head); false }
+        }
+
+        protected open fun tryWithElement(block: (element: Element, head: NoteHead) -> Boolean): Boolean? {
+            withElement { element, head -> block(element, head) }
+            return null
+        }
 
         protected abstract fun withDynamic(block: (element: DynamicView) -> Unit)
 
         override fun instrumentChanged(instr: Instrument): Unit = withElement { element, _ ->
             element.instrument = instr
-        } ?: Unit
+        }
 
         override fun accidentalChanged(acc: Accidental): Unit = withElement { element, head ->
             if (element is Trill && head.scaleX == SECONDARY_PITCH_SCALE) {
@@ -277,7 +284,7 @@ class ScoreView(
                 element.pitch = element.pitch.copy(accidental = acc)
                 accidentalViews.getValue(element).accidental = acc
             }
-        } ?: Unit
+        }
 
         override fun dynamicChanged(dynamic: Dynamic) {
             withDynamic { element ->
@@ -288,7 +295,7 @@ class ScoreView(
             }
         }
 
-        override fun elementTypeChanged(type: Element.Type<*>): Boolean = withElement { element, head ->
+        override fun elementTypeChanged(type: Element.Type<*>): Boolean = tryWithElement { element, head ->
             val possible = element.setType(type)
             if (possible) {
                 head.noteHeadType = type.noteHeadType
@@ -371,38 +378,63 @@ class ScoreView(
         }
     }
 
-    private inner class Pointer(var selected: SelectableElement? = null) : EditElement() {
-        override fun <T : Any> withElement(block: (element: Element, head: NoteHead) -> T): T? {
-            val el = selected
-            return if (el is NoteHead && el.element != null) block(el.element, el) else null
+    private inner class Pointer : EditElement() {
+        private val selected = mutableSetOf<SelectableElement>()
+
+        override fun withElement(block: (element: Element, head: NoteHead) -> Unit) {
+            for (el in selected.filterIsInstance<NoteHead>()) {
+                if (el.element != null) block(el.element, el)
+            }
+        }
+
+        override fun tryWithElement(block: (element: Element, head: NoteHead) -> Boolean): Boolean? {
+            var ok = true
+            val heads = selected.filterIsInstance<NoteHead>().ifEmpty { return null }
+            for (head in heads) {
+                if (head.element != null && !block(head.element, head)) {
+                    ok = false
+                }
+            }
+            return ok
         }
 
         override fun withDynamic(block: (element: DynamicView) -> Unit) {
-            val el = selected
-            if (el is DynamicView) {
+            for (el in selected.filterIsInstance<DynamicView>()) {
                 block(el)
             }
         }
 
         override fun replaced(new: Disposition) {
-            selected?.isSelected = false
+            for (element in selected) {
+                element.isSelected = false
+            }
         }
 
         override fun mouseClicked(ev: MouseEvent) {
-            selected?.isSelected = false
             val element = ev.target?.findParentOfType<SelectableElement>()
-            selected = element
-            element?.isSelected = true
-            when (element) {
-                is DynamicView -> element.dynamic.let { dynamicsSelector.select(it) }
-                is NoteHead -> {
-                    val el = element.element ?: return
-                    el.instrument?.let { instrumentSelector.select(it) }
-                    if (el is PitchedElement) {
-                        val pitch =
-                            if (el is Trill && element.scaleX == SECONDARY_PITCH_SCALE) el.secondaryPitch!!
-                            else el.pitch
-                        accidentalSelector.select(pitch.accidental)
+            select(element, extendSelection = ev.isShiftDown)
+        }
+
+        fun select(element: SelectableElement?, extendSelection: Boolean = false) {
+            if (!extendSelection) {
+                for (el in selected) el.isSelected = false
+                selected.clear()
+            }
+            if (element == null) return
+            selected.add(element)
+            element.isSelected = true
+            if (!extendSelection) {
+                when (element) {
+                    is DynamicView -> element.dynamic.let { dynamicsSelector.select(it) }
+                    is NoteHead -> {
+                        val el = element.element ?: return
+                        el.instrument?.let { instrumentSelector.select(it) }
+                        if (el is PitchedElement) {
+                            val pitch =
+                                if (el is Trill && element.scaleX == SECONDARY_PITCH_SCALE) el.secondaryPitch!!
+                                else el.pitch
+                            accidentalSelector.select(pitch.accidental)
+                        }
                     }
                 }
             }
@@ -410,7 +442,7 @@ class ScoreView(
 
         override fun deleteElement() {
             super.deleteElement()
-            selected = null
+            selected.clear()
         }
     }
 
@@ -426,9 +458,13 @@ class ScoreView(
             phantomAccidental.visibleProperty().bind(phantomHead.visibleProperty())
         }
 
-        override fun <T : Any> withElement(block: (element: Element, head: NoteHead) -> T): T? {
+        override fun tryWithElement(block: (element: Element, head: NoteHead) -> Boolean): Boolean? {
             val el = lastCreated
             return if (el?.element != null) block(el.element, el) else null
+        }
+
+        override fun withElement(block: (element: Element, head: NoteHead) -> Unit) {
+            if (lastCreated != null) block(lastCreated!!.element!!, lastCreated!!)
         }
 
         override fun withDynamic(block: (element: DynamicView) -> Unit) {
@@ -445,13 +481,20 @@ class ScoreView(
         override fun replaced(new: Disposition) {
             children.removeAll(phantomHead, phantomAccidental)
             children.removeAll(ledgerLines)
-            if (new is Pointer) new.selected = lastCreated
+            lastCreated?.regular()
+            if (new is Pointer) {
+                new.select(lastCreated)
+            }
         }
 
         override fun elementTypeChanged(type: Element.Type<*>): Boolean {
             phantomHead.noteHeadType = type.noteHeadType
             return true
         }
+
+        override fun instrumentChanged(instr: Instrument) {}
+
+        override fun dynamicChanged(dynamic: Dynamic) {}
 
         override fun mouseEntered(ev: MouseEvent) {
             phantomHead.isVisible = true
@@ -486,14 +529,14 @@ class ScoreView(
             if (element is PitchedElement) element.pitch = getPitch(y)
             else element.customY = y - 8
             addElement(element)
-            lastCreated?.isSelected = false
+            lastCreated?.regular()
             when (element) {
                 is Trill -> disposition = TrillInCreation(element)
                 is ContinuousElement -> disposition = ElementInCreation(element)
                 else -> {
                     val head = noteHeads.getValue(element)
                     lastCreated = head
-                    head.isSelected = true
+                    head.lastCreated()
                     lastCreatedDynamic = startDynamics[element]
                 }
             }
@@ -520,15 +563,18 @@ class ScoreView(
             durationLines[element] = line
         }
 
-        override fun <T : Any> withElement(block: (element: Element, head: NoteHead) -> T): T = block(element, head)
+        override fun withElement(block: (element: Element, head: NoteHead) -> Unit) = block(element, head)
 
         override fun withDynamic(block: (element: DynamicView) -> Unit) {}
+
+        override fun tryWithElement(block: (element: Element, head: NoteHead) -> Boolean): Boolean =
+            block(element, head)
 
         override fun replaced(new: Disposition) {
             if (!finished) deleteElement(element)
             else {
                 head.isSelected = true
-                if (new is Pointer) new.selected = head
+                if (new is Pointer) new.select(head)
             }
         }
 
@@ -548,10 +594,10 @@ class ScoreView(
         override fun mouseClicked(ev: MouseEvent) {
             var (x, _) = normalizeCoords(ev)
             x = x.coerceAtLeast(minX)
-            val xProp = SimpleDoubleProperty(x)
-            val phase = ElementPhase(getTime(x), element.pitch, dynamicsSelector.selected.value)
+            val time = getTime(x)
+            val phase = ElementPhase(time, element.pitch, dynamicsSelector.selected.value)
             element.phases.add(phase)
-            val dynamic = DynamicView(xProp, head.yProperty(), phase::targetDynamic, phase::end)
+            val dynamic = DynamicView(time.toXCoordinate(), head.yProperty(), phase::targetDynamic, phase::end)
             phaseDynamics[phase] = dynamic
             add(element, dynamic)
             minX = x + BEAT_W * zoomFactor.value
@@ -571,6 +617,8 @@ class ScoreView(
                 element.pitch = element.pitch.copy(accidental = acc)
             }
         }
+
+        override fun dynamicChanged(dynamic: Dynamic) {}
     }
 
     private inner class TrillInCreation(private val trill: Trill) : EditElement() {
@@ -586,7 +634,7 @@ class ScoreView(
             layoutSecondaryPitch(trill, head, littleHead, littleAccidental)
         }
 
-        override fun <T : Any> withElement(block: (element: Element, head: NoteHead) -> T): T = block(trill, head)
+        override fun withElement(block: (element: Element, head: NoteHead) -> Unit) = block(trill, head)
 
         override fun withDynamic(block: (element: DynamicView) -> Unit) = block(startDynamics.getValue(trill))
 
