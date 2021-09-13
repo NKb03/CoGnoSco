@@ -20,9 +20,10 @@ class AccidentalView(
     init {
         image = loadImage(acc)
         fitHeight(25.0)
-        val width = selectDouble("image", "height").divide(selectDouble("image", "height")).multiply(25)
+        isSmooth = true
+        val width = selectDouble("image", "width").divide(selectDouble("image", "height")).multiply(25)
             .multiply(scaleXProperty())
-        xProperty().bind(head.xProperty().subtract(width).add(5))
+        xProperty().bind(head.xProperty().subtract(width))
         yProperty().bind(Bindings.subtract(head.yProperty(), 5))
     }
 

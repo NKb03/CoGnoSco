@@ -189,8 +189,8 @@ class ScoreView(
             if (littleHead.y == head.y) head.x + 35 else head.x + 15
         })
         littleHead.y = trill.secondaryPitch!!.getY()
-        lp.layoutXProperty().bind(accidental.xProperty().subtract(5))
-        rp.layoutXProperty().bind(littleHead.xProperty().add(10))
+        lp.layoutXProperty().bind(accidental.xProperty().subtract(7))
+        rp.layoutXProperty().bind(littleHead.xProperty().add(5))
         lp.layoutYProperty().bind(littleHead.yProperty().subtract(4))
         rp.layoutYProperty().bind(littleHead.yProperty().subtract(4))
         val connector = Line()
