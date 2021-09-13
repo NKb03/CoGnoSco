@@ -2,8 +2,17 @@
 
 package cognosco
 
+import cognosco.Element.Companion.p
 import cognosco.InstrumentFamily.*
+import cognosco.gui.impl.flatMap
+import cognosco.gui.impl.map
+import cognosco.gui.impl.zipWithBy
 import cognosco.lily.lilypond
+import javafx.beans.property.DoubleProperty
+import javafx.beans.property.Property
+import javafx.beans.property.SimpleDoubleProperty
+import javafx.beans.property.SimpleObjectProperty
+import javafx.beans.value.ObservableValue
 import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
@@ -14,9 +23,9 @@ import kotlinx.serialization.json.*
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.contextual
 import java.io.File
-import kotlin.reflect.KMutableProperty1
-import kotlin.reflect.KProperty1
-import kotlin.reflect.full.memberProperties
+import kotlin.reflect.KProperty0
+import kotlin.reflect.KType
+import kotlin.reflect.typeOf
 
 private val json = Json {
     prettyPrint = true
@@ -170,49 +179,47 @@ enum class NoteHeadType {
 }
 
 sealed interface Element {
-    val type: Type<Element>
-    var instrument: Instrument?
-    var start: Time
-    var startDynamic: Dynamic
-    var customY: Double?
-    val end: Time
-    val pitch: Pitch? get() = null
+    val type: ObservableValue<out Type<Element>>
+    val instrument: Property<Instrument?>
+    val start: Property<Time>
+    val startDynamic: Property<Dynamic>
+    val customY: DoubleProperty?
+    val end: ObservableValue<out Time>
+    val pitch: ObservableValue<out Pitch?> get() = SimpleObjectProperty(null)
 
     fun setType(type: Type<*>): Boolean
 
+    fun properties(): List<Prop> = listOf(::instrument.p, ::start.p, ::startDynamic.p)
+
     fun copyFrom(original: Element) {
-        instrument = original.instrument
-        start = original.start
-        startDynamic = original.startDynamic
-        customY = original.customY
+        for ((p1, p2) in properties().zipWithBy(original.properties()) { it.name }) {
+            p1.reactive.value = p2.reactive.value
+        }
     }
 
     fun serialize(): JsonElement = buildJsonObject {
         val element = this@Element
-        put("type", JsonPrimitive(element.type.id))
-        @Suppress("UNCHECKED_CAST")
-        for (prop in element::class.memberProperties as List<KProperty1<Element, Any?>>) {
-            if (prop !is KMutableProperty1 || prop.name == "type") continue
-            val value = prop.get(element) ?: continue
-            if (value == 0 || value == 0.0) continue
-            val serializer = serializer(prop.returnType)
-            val encoded =
-                if (value is Enum<*>) JsonPrimitive(value.name) else json.encodeToJsonElement(serializer, value)
+        put("type", JsonPrimitive(element.type.value.id))
+        for (prop in properties()) {
+            val v = prop.reactive.value
+            if (v == null || v == 0 || v == 0.0) continue
+            val serializer = serializer(prop.type)
+            val encoded = if (v is Enum<*>) JsonPrimitive(v.name) else json.encodeToJsonElement(serializer, v)
             put(prop.name, encoded)
         }
     }
 
     fun deserialize(obj: JsonObject) {
-        @Suppress("UNCHECKED_CAST")
-        for (prop in this::class.memberProperties as List<KProperty1<Element, Any?>>) {
-            if (prop !is KMutableProperty1 || prop.name == "type") continue
+        for (prop in properties()) {
             val value = obj[prop.name] ?: continue
-            val serializer = serializer(prop.returnType)
+            val serializer = serializer(prop.type)
             val decoded = json.decodeFromJsonElement(serializer, value)
-            if (decoded == 0 || decoded == 0.0) continue
-            prop.set(this, decoded)
+            if (decoded == null || decoded == 0 || decoded == 0.0) continue
+            prop.reactive.value = decoded
         }
     }
+
+    data class Prop(val name: String, val type: KType, val reactive: Property<Any?>)
 
     sealed interface Type<out E : Element> {
         val id: String
@@ -240,6 +247,11 @@ sealed interface Element {
             DiscreteNoise.Type.Bang
         )
 
+        @Suppress("UNCHECKED_CAST")
+        @OptIn(ExperimentalStdlibApi::class)
+        inline val <reified T> KProperty0<Property<T>>.p
+            get() = Prop(name, typeOf<T>(), get() as Property<Any?>)
+
         private val map = ALL_TYPES.associateBy { it.id }
 
         fun deserialize(json: JsonElement): Element {
@@ -254,42 +266,51 @@ sealed interface Element {
 }
 
 sealed interface PitchedElement : Element {
-    override val type: Type<PitchedElement>
-    override var pitch: Pitch
+    override val type: ObservableValue<out Type<PitchedElement>>
+    override val pitch: Property<Pitch>
 
-    override fun copyFrom(original: Element) {
-        if (original is PitchedElement) pitch = original.pitch
-    }
+    override fun properties(): List<Element.Prop> = super.properties() + ::pitch.p
 
     sealed interface Type<out E : PitchedElement> : Element.Type<E>
 }
 
 sealed class AbstractElement : Element {
-    override var start: Time = 0
-    override var startDynamic: Dynamic = Dynamic.MF
-    override var instrument: Instrument? = null
-    override var customY: Double? = null
-    override val end: Time
-        get() = start + 1
+    override val start: Property<Time> = SimpleObjectProperty(0)
+    override val startDynamic: Property<Dynamic> = SimpleObjectProperty(Dynamic.MF)
+    override val instrument: Property<Instrument?> = SimpleObjectProperty(null)
+    override val customY: DoubleProperty? get() = null
 
     override fun toString(): String = "$type: $start ($startDynamic)"
 }
 
+data class PropertySerializer<T : Any>(private val valueSerializer: KSerializer<T>) : KSerializer<Property<T>> {
+    override val descriptor: SerialDescriptor
+        get() = valueSerializer.descriptor
+
+    override fun serialize(encoder: Encoder, value: Property<T>) {
+        encoder.encodeSerializableValue(valueSerializer, value.value)
+    }
+
+    override fun deserialize(decoder: Decoder): Property<T> {
+        val prop = SimpleObjectProperty<T>()
+        prop.value = decoder.decodeSerializableValue(valueSerializer)
+        return prop
+    }
+}
+
 @Serializable
-class ElementPhase(var end: Time, var targetPitch: Pitch?, var targetDynamic: Dynamic)
+class ElementPhase(
+    @Serializable(with = PropertySerializer::class) val end: Property<Time>,
+    @Serializable(with = PropertySerializer::class) val targetPitch: Property<Pitch>,
+    @Serializable(with = PropertySerializer::class) val targetDynamic: Property<Dynamic>
+)
 
 sealed interface ContinuousElement : Element {
-    abstract override val type: Type<ContinuousElement>
+    abstract override val type: ObservableValue<out Type<ContinuousElement>>
 
-    var phases: MutableList<ElementPhase>
+    val phases: Property<List<ElementPhase>>
 
-    override fun copyFrom(original: Element) {
-        super.copyFrom(original)
-        if (original is ContinuousElement) {
-            phases.clear()
-            phases.addAll(original.phases)
-        }
-    }
+    override fun properties(): List<Element.Prop> = super.properties() + ::phases.p
 
     sealed interface Type<out E : ContinuousElement> : Element.Type<E> {
         val strokeDashArray: List<Double> get() = emptyList()
@@ -297,10 +318,10 @@ sealed interface ContinuousElement : Element {
 }
 
 sealed class AbstractContinuousElement : ContinuousElement, AbstractElement() {
-    override var phases: MutableList<ElementPhase> = mutableListOf()
+    final override val phases: Property<List<ElementPhase>> = SimpleObjectProperty(emptyList())
 
-    override val end: Time
-        get() = phases.last().end
+    override val end: ObservableValue<out Time> =
+        phases.flatMap { phases -> phases.lastOrNull()?.end ?: SimpleObjectProperty(0) }
 
     override fun copyFrom(original: Element) {
         super<ContinuousElement>.copyFrom(original)
@@ -308,25 +329,23 @@ sealed class AbstractContinuousElement : ContinuousElement, AbstractElement() {
 }
 
 sealed class PitchedContinuousElement : ContinuousElement, PitchedElement, AbstractContinuousElement() {
-    abstract override val type: Type<PitchedContinuousElement>
-    override lateinit var pitch: Pitch
+    abstract override val type: ObservableValue<out Type<PitchedContinuousElement>>
+    override val pitch: Property<Pitch> = SimpleObjectProperty(Pitch(0, PitchName.C, RegularAccidental.Natural))
 
-    override fun copyFrom(original: Element) {
-        super<AbstractContinuousElement>.copyFrom(original)
-        super<PitchedElement>.copyFrom(original)
-    }
+    override fun properties(): List<Element.Prop> = super<AbstractContinuousElement>.properties() + ::pitch.p
 
     sealed interface Type<out E : PitchedContinuousElement> : PitchedElement.Type<E>, ContinuousElement.Type<E>
 }
 
 class SimplePitchedContinuousElement(
-    override var type: Type,
+    override val type: Property<Type>,
 ) : PitchedContinuousElement() {
-    override fun toString(): String = "${type.id} $pitch (${instrument?.shortName}), $start, ($startDynamic)"
+    override fun toString(): String =
+        "${type.value.id} ${pitch.value} (${instrument.value?.shortName}), ${start.value}, (${startDynamic.value})"
 
     override fun setType(type: Element.Type<*>): Boolean {
         if (type !is Type) return false
-        this.type = type
+        this.type.value = type
         return true
     }
 
@@ -348,27 +367,23 @@ class SimplePitchedContinuousElement(
                 get() = NoteHeadType.Rectangle
         };
 
-        override fun createElement(): SimplePitchedContinuousElement = SimplePitchedContinuousElement(this)
+        override fun createElement(): SimplePitchedContinuousElement =
+            SimplePitchedContinuousElement(SimpleObjectProperty(this))
     }
 }
 
 class Trill : PitchedContinuousElement() {
-    var secondaryPitch: Pitch? = null
+    val secondaryPitch: Property<Pitch> = SimpleObjectProperty(Pitch(0, PitchName.C, RegularAccidental.Natural))
+
+    override fun properties(): List<Element.Prop> = super.properties() + ::secondaryPitch.p
 
     override fun toString(): String =
-        "tr $pitch ($secondaryPitch) gespielt von ${instrument?.shortName}, $start, ($startDynamic)"
-
-    override fun copyFrom(original: Element) {
-        super.copyFrom(original)
-        if (original is Trill) {
-            secondaryPitch = original.secondaryPitch
-        }
-    }
+        "tr $pitch ($secondaryPitch) gespielt von ${instrument.value?.shortName}, ${start.value}, (${startDynamic.value})"
 
     override fun setType(type: Element.Type<*>): Boolean = false
 
-    override val type: Type<Trill>
-        get() = Trill
+    override val type: Property<Type<PitchedContinuousElement>>
+        get() = SimpleObjectProperty(Trill)
 
     companion object : Type<Trill> {
         override val id: String
@@ -383,12 +398,17 @@ class Trill : PitchedContinuousElement() {
     }
 }
 
-open class ContinuousNoise(override var type: Type) : ContinuousElement, AbstractContinuousElement() {
-    override fun toString(): String = "${type.id} (${instrument?.shortName}), $start ($startDynamic)"
+open class ContinuousNoise(override var type: Property<Type>) : ContinuousElement, AbstractContinuousElement() {
+    override val customY: DoubleProperty = SimpleDoubleProperty()
+
+    override fun properties(): List<Element.Prop> = super<AbstractContinuousElement>.properties() + ::customY.p
+
+    override fun toString(): String =
+        "${type.value.id} (${instrument.value?.shortName}), ${start.value} (${startDynamic.value})"
 
     override fun setType(type: Element.Type<*>): Boolean {
         if (type !is Type) return false
-        this.type = type
+        this.type.value = type
         return true
     }
 
@@ -405,20 +425,24 @@ open class ContinuousNoise(override var type: Type) : ContinuousElement, Abstrac
                 get() = NoteHeadType.Rhombus
         };
 
-        override fun createElement(): ContinuousNoise = ContinuousNoise(this)
+        override fun createElement(): ContinuousNoise = ContinuousNoise(SimpleObjectProperty(this))
     }
 }
 
-class DiscretePitchedElement(override var type: Type) : AbstractElement(), PitchedElement {
-    override lateinit var pitch: Pitch
+class DiscretePitchedElement(override val type: Property<Type>) : AbstractElement(),
+    PitchedElement {
+    override val pitch: Property<Pitch> = SimpleObjectProperty(Pitch(0, PitchName.C, RegularAccidental.Natural))
+
+    override val end: ObservableValue<out Time> = start.map { t -> t + 1 }
 
     override fun setType(type: Element.Type<*>): Boolean {
         if (type !is Type) return false
-        this.type = type
+        this.type.value = type
         return true
     }
 
-    override fun toString(): String = "${type.id}: $pitch gespielt von ${instrument?.shortName}, $start ($startDynamic)"
+    override fun toString(): String =
+        "${type.value.id}: $pitch gespielt von ${instrument.value?.shortName}, ${start.value} (${startDynamic.value})"
 
     enum class Type(
         override val id: String,
@@ -434,18 +458,25 @@ class DiscretePitchedElement(override var type: Type) : AbstractElement(), Pitch
                 get() = NoteHeadType.Triangle
         };
 
-        override fun createElement(): DiscretePitchedElement = DiscretePitchedElement(this)
+        override fun createElement(): DiscretePitchedElement = DiscretePitchedElement(SimpleObjectProperty(this))
     }
 }
 
-class DiscreteNoise(override var type: Type) : AbstractElement() {
+class DiscreteNoise(override val type: Property<Type>) : AbstractElement() {
+    override val customY: DoubleProperty = SimpleDoubleProperty()
+
+    override fun properties(): List<Element.Prop> = super.properties() + ::customY.p
+
     override fun setType(type: Element.Type<*>): Boolean {
         if (type !is Type) return false
-        this.type = type
+        this.type.value = type
         return true
     }
 
-    override fun toString(): String = "${type.id} gespielt von ${instrument?.shortName}, $start ($startDynamic)"
+    override val end: ObservableValue<out Time> = start.map { t -> t + 1 }
+
+    override fun toString(): String =
+        "${type.value.id} gespielt von ${instrument.value?.shortName}, ${start.value} (${startDynamic.value})"
 
     enum class Type(override val id: String, override val description: String) : Element.Type<DiscreteNoise> {
         Bang("bang", "Schlag") {
@@ -453,7 +484,7 @@ class DiscreteNoise(override var type: Type) : AbstractElement() {
                 get() = NoteHeadType.Rectangle
         };
 
-        override fun createElement(): DiscreteNoise = DiscreteNoise(this)
+        override fun createElement(): DiscreteNoise = DiscreteNoise(SimpleObjectProperty(this))
     }
 }
 

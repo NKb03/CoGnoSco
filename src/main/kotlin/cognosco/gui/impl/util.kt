@@ -4,8 +4,6 @@ import cognosco.Accidental
 import cognosco.gui.App
 import cognosco.lily.lilypond
 import javafx.application.Platform
-import javafx.beans.binding.Bindings.selectDouble
-import javafx.beans.binding.DoubleBinding
 import javafx.event.EventTarget
 import javafx.scene.Node
 import javafx.scene.control.Alert
@@ -70,4 +68,11 @@ inline fun <reified T> EventTarget.findParentOfType(): T? {
     return null
 }
 
-fun Any.selectDouble(vararg steps: String): DoubleBinding = selectDouble(this, *steps)
+@OptIn(ExperimentalStdlibApi::class)
+fun <E, F> Iterable<E>.zipWithBy(other: Iterable<E>, selector: (E) -> F): List<Pair<E, E>> = buildList {
+    val map = other.associateBy(selector)
+    for (element in this@zipWithBy) {
+        val associated = map[selector(element)] ?: continue
+        add(Pair(element, associated))
+    }
+}

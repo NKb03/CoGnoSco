@@ -3,22 +3,18 @@ package cognosco.gui
 import cognosco.Accidental
 import cognosco.gui.impl.fitHeight
 import cognosco.gui.impl.loadImage
+import cognosco.gui.impl.map
 import cognosco.gui.impl.selectDouble
 import javafx.beans.binding.Bindings
+import javafx.beans.value.ObservableValue
 import javafx.scene.image.ImageView
 
 class AccidentalView(
-    acc: Accidental,
+    private val accidental: ObservableValue<Accidental>,
     head: NoteHead
 ) : ImageView() {
-    var accidental: Accidental = acc
-        set(value) {
-            field = value
-            image = loadImage(value)
-        }
-
     init {
-        image = loadImage(acc)
+        imageProperty().bind(accidental.map { loadImage(it) })
         fitHeight(25.0)
         isSmooth = true
         val width = selectDouble("image", "width").divide(selectDouble("image", "height")).multiply(25)
@@ -31,5 +27,5 @@ class AccidentalView(
 
     fun regular() = also { opacity = 1.0 }
 
-    override fun toString(): String = "AccidentalView [ accidental = $accidental ]"
+    override fun toString(): String = "AccidentalView [ accidental = ${accidental.value} ]"
 }

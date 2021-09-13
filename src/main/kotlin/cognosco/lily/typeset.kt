@@ -56,18 +56,18 @@ private fun getTechnique(type: Element.Type<Element>, instrument: Instrument) = 
 }
 
 private fun ElementTypesetter.typesetElement(element: Element, instrument: Instrument) {
-    technique = getTechnique(element.type, instrument)
-    val pitch = if (element is PitchedElement) element.pitch else instrument.clef.middleLinePitch!!
+    technique = getTechnique(element.type.value, instrument)
+    val pitch = if (element is PitchedElement) element.pitch.value else instrument.clef.middleLinePitch!!
     if (element is Trill) {
         addNote(pitch, "16")
         append("\\trill")
-        addDynamic(element.startDynamic)
+        addDynamic(element.startDynamic.value)
         magnifyMusic(0.6)
         +"\\parenthesize"
-        addNote(element.secondaryPitch!!, "16", duration = 0)
+        addNote(element.secondaryPitch.value, "16", duration = 0)
     } else {
         val type = if (element is SimplePitchedContinuousElement) {
-            when (element.type) {
+            when (element.type.value) {
                 SimplePitchedContinuousElement.Type.FastRepeat -> {
                     +"\\repeat tremolo 8"
                     "64"
@@ -80,15 +80,15 @@ private fun ElementTypesetter.typesetElement(element: Element, instrument: Instr
             }
         } else "8"
         addNote(pitch, type)
-        addDynamic(element.startDynamic)
+        addDynamic(element.startDynamic.value)
     }
     if (element is ContinuousElement) {
-        var lastDynamic = element.startDynamic
-        for (phase in element.phases) {
-            if (phase.targetDynamic > lastDynamic) addCrescendo() else addDecrescendo()
-            addRestTo(phase.end, endDynamic = true, hide = true)
-            addDynamic(phase.targetDynamic, force = true)
-            lastDynamic = phase.targetDynamic
+        var lastDynamic = element.startDynamic.value
+        for (phase in element.phases.value) {
+            if (phase.targetDynamic.value > lastDynamic) addCrescendo() else addDecrescendo()
+            addRestTo(phase.end.value, endDynamic = true, hide = true)
+            addDynamic(phase.targetDynamic.value, force = true)
+            lastDynamic = phase.targetDynamic.value
         }
     }
 }
@@ -128,7 +128,7 @@ private fun LilypondWriter.typesetPart(staff: Staff, part: Part, score: Score) =
         +"\\clef ${instr.clef.lilypond()}"
         for (element in part.elements) {
             val start = element.start
-            addRestTo(start)
+            addRestTo(start.value)
             typesetElement(element, instr)
         }
         addRestTo(score.duration)
@@ -158,7 +158,7 @@ private fun LilypondWriter.typesetScore(score: Score) {
 private fun Appendable.typeset(score: GraphicalScore, orchestra: Orchestra) {
     val writer = LilypondWriterImpl(this)
     val parts = makeParts(score.elements, orchestra.staffs)
-    val duration = score.elements.maxOf { it.end }
+    val duration = score.elements.maxOf { it.end.value }
     writer.typesetScore(Score(orchestra, parts, duration))
 }
 
