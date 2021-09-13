@@ -12,5 +12,6 @@ interface LilypondWriter {
 
     operator fun String.invoke(block: () -> Unit)
     fun new(type: String, block: () -> Unit)
-    fun include(resource: String)
+    fun includeResource(resource: String)
+    fun includePath(path: String)
 }

@@ -25,3 +25,5 @@ dist
 
 *.pdf
 *.ly
+*.json
+examples

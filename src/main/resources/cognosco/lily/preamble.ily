@@ -28,6 +28,9 @@
  \context {
    \Staff \RemoveEmptyStaves
  }
+ \context {
+    \RhythmicStaff \RemoveEmptyStaves
+ }
 }
 
 dashPlus = "trill"

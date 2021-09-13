@@ -17,6 +17,7 @@ import javafx.scene.paint.Color
 import javafx.scene.shape.Line
 import javafx.scene.shape.QuadCurve
 import javafx.scene.shape.Shape
+import javafx.scene.text.Text
 import kotlin.properties.Delegates
 
 class ScoreView(
@@ -398,7 +399,7 @@ class ScoreView(
                             }
                             is Shape -> {
                                 if (!node.fillProperty().isBound) node.fill = Color.BLACK
-                                if (!node.strokeProperty().isBound) node.stroke = Color.BLACK
+                                if (!node.strokeProperty().isBound && node !is Text) node.stroke = Color.BLACK
                             }
                         }
                     }
@@ -435,7 +436,7 @@ class ScoreView(
                                 }
                                 is Shape -> {
                                     if (!node.fillProperty().isBound) node.fill = Color.CADETBLUE
-                                    if (!node.strokeProperty().isBound) node.stroke = Color.CADETBLUE
+                                    if (!node.strokeProperty().isBound && node !is Text) node.stroke = Color.CADETBLUE
                                 }
                             }
                         }

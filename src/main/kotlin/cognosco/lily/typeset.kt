@@ -86,7 +86,8 @@ private fun ElementTypesetter.typesetElement(element: Element, instrument: Instr
         var lastDynamic = element.startDynamic.value
         for (phase in element.phases.value) {
             if (phase.targetDynamic.value > lastDynamic) addCrescendo() else addDecrescendo()
-            addRestTo(phase.end.value, endDynamic = true, hide = true)
+            addRestTo(phase.end.value, hide = true)
+            addRest(1, hide = true)
             addDynamic(phase.targetDynamic.value, force = true)
             lastDynamic = phase.targetDynamic.value
         }
@@ -100,22 +101,6 @@ private fun Staff.partName(): String {
         .replace("&3", "Three")
         .replace("&4", "Four")
     return "${instrument.name.lowercase()}${idx}Music"
-}
-
-private fun LilypondWriter.typesetGroup(group: InstrumentGroup) {
-    new("StaffGroup") {
-        for ((instr, staffs) in group.staffs.groupBy { it.instrument }) {
-            new("StaffGroup \\with { systemStartDelimiter = #'SystemStartSquare }") {
-                for (staff in staffs) {
-                    val staffType = if (instr.family == InstrumentFamily.Percussion) "RhythmicStaff" else "Staff"
-                    val staffInfo = "instrumentName = ${staff.fullName.q} shortInstrumentName=${staff.shortName.q}"
-                    new("$staffType \\with { $staffInfo }") {
-                        +"\\${staff.partName()}"
-                    }
-                }
-            }
-        }
-    }
 }
 
 private fun LilypondWriter.typesetPart(staff: Staff, part: Part, score: Score) = with(ElementTypesetter(this)) {
@@ -136,29 +121,32 @@ private fun LilypondWriter.typesetPart(staff: Staff, part: Part, score: Score) =
 }
 
 private fun LilypondWriter.typesetScore(score: Score) {
-    include("preamble.ily")
-    include("accidentals.ily")
-    include("ekmel-main.ily")
+    +"\\version \"2.22.1\""
+    includePath(copyFromResources("preamble.ily"))
+    includePath(copyFromResources("accidentals.ily"))
+    includePath(copyFromResources("ekmel-main.ily"))
     for (staff in score.orchestra.staffs) {
         val part = score.parts.getValue(staff)
         val name = staff.partName()
-        append("$name = ")
+        +"$name = "
         typesetPart(staff, part, score)
     }
-    "\\score" {
-        new("GrandStaff") {
-            +"\\time 1/4"
-            for (group in score.orchestra.groups) {
-                typesetGroup(group)
-            }
-        }
+    includePath(copyFromResources("score.ily"))
+}
+
+private fun copyFromResources(name: String): String {
+    val file = Files.ily.resolve(name)
+    if (!file.exists()) {
+        val res = LilypondWriter::class.java.getResource(name) ?: error("Cannot find resource $name")
+        file.writeText(res.readText())
     }
+    return file.absolutePath
 }
 
 private fun Appendable.typeset(score: GraphicalScore, orchestra: Orchestra) {
     val writer = LilypondWriterImpl(this)
     val parts = makeParts(score.elements, orchestra.staffs)
-    val duration = score.elements.maxOf { it.end.value }
+    val duration = score.elements.maxOf { it.end.value + 1 }
     writer.typesetScore(Score(orchestra, parts, duration))
 }
 

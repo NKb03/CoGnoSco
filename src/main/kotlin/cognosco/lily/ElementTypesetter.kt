@@ -29,7 +29,8 @@ class ElementTypesetter(private val writer: LilypondWriter) : LilypondWriter by 
         +"\\override $property=$value"
     }
 
-    fun addRest(rest: Int, endDynamic: Boolean = false, hide: Boolean = false) {
+    fun addRest(rest: Int, hide: Boolean = false) {
+        check(rest >= 0) { "negative rest: $rest" }
         if (rest == 0) return
         var r = rest
         val h = if (hide) "\\hide " else ""
@@ -38,23 +39,27 @@ class ElementTypesetter(private val writer: LilypondWriter) : LilypondWriter by 
             append("${h}r8")
             r -= 1
         }
-        if (currentTime != 0) { append("|") }
+        if (r == 0) {
+            currentTime += rest
+            return
+        }
+        if (currentTime != 0) {
+            append(" | ")
+        }
         if (r / 2 > 0) {
-            if (endDynamic && r % 2 == 0) append(" ${h}R4 * ${r / 2 - 1} | ${h}R4")
-            else append("${h}R4 * ${r / 2} ")
+            append("${h}R4 * ${r / 2} |")
             r -= (r - r % 2)
         }
         if (r == 1) {
-            append(" | ${h}r8")
+            append("${h}r8")
             r -= 1
         }
-        check(r == 0)
+        check(r == 0) { "could not write complete rest, $r is left" }
         currentTime += rest
     }
 
-    fun addRestTo(to: Time, endDynamic: Boolean = false, hide: Boolean = false) {
-        addRest(to - currentTime, endDynamic, hide)
-        currentTime = to
+    fun addRestTo(to: Time, hide: Boolean = false) {
+        addRest(to - currentTime, hide)
     }
 
     fun addNote(pitch: Pitch, type: String = "8", duration: Time = 1) {

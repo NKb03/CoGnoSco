@@ -60,9 +60,13 @@ class LilypondWriterImpl(private val output: Appendable) : LilypondWriter {
         appendLine(">>")
     }
 
-    override fun include(resource: String) {
+    override fun includeResource(resource: String) {
         val url = javaClass.getResource(resource) ?: error("resource $resource not found")
         appendLine()
         appendLine(url.readText())
+    }
+
+    override fun includePath(path: String) {
+        +"\\include \"$path\""
     }
 }

@@ -1,16 +1,11 @@
-﻿% Enharmonically equivalent accidentals
-#(define EKM-ACODE-EQUIV #x0200)
+﻿#(define EKM-ACODE-EQUIV #x0200)
 #(define EKM-ALTER-EQUIV 1/1024)
 
-% Mask to ignore enh. equivalence (EKM-ACODE-EQUIV) and direction (bit 0)
 #(define EKM-ACODE-MASK (lognot #x0201))
 
-% Left/Right parenthesis for cautionary accidentals
 #(define EKM-LPAR (list (ly:wide-char->utf-8 #xE26A)))
 #(define EKM-RPAR (list (ly:wide-char->utf-8 #xE26B)))
 
-
-%% Auxiliary functions for enh. equivalence
 
 #(define (ekm:equiv? a)
   ;; Return #t if the alteration @var{a} is enh. equivalent.
@@ -46,9 +41,6 @@
     (if (logtest c 1) (- a) a)))
 
 
-%% Language (pitch names)
-
-% List of alteration codes occurring in the language table
 #(define ekm:acodes #f)
 
 #(define (ekm:set-language lang)
@@ -71,8 +63,6 @@
     (set! pitchnames tab)
     (ly:parser-set-note-names tab)))
 
-
-%% Notation (style)
 
 #(define ekm:notation-name "")
 #(define ekm:notation '())
@@ -122,8 +112,6 @@
     (set! ekm:notation (append tab rem))))
 
 
-%% Font
-
 #(define ekm:font-name
   (let ((font (ly:get-option 'ekmelic-font)))
     (if font
@@ -134,8 +122,6 @@
 
 #(define ekm:font-size 5)
 
-
-%% Main procs (stencils)
 
 #(define-markup-command (ekmelic-acc layout props alt rst par)
   ;; Create the accidental of the alteration @var{alt} (must be defined),
@@ -193,12 +179,6 @@
       alt)
     sig))
 
-% #(define (ekm:alt->string alt)
-%   (number->string (if (>= (denominator alt) 256) (- alt EKM-ALTER-EQUIV) alt)))
-
-
-%% Aux procs for ekmelicUserStyle
-
 #(define (ekm:list-prefix pfx ls)
   (cond
     ((null? pfx) ls)
@@ -219,8 +199,6 @@
           (set-cdr! ls (ekm:list-replace! old new (cdr ls)))
           ls)))))
 
-
-%% Main settings
 
 language =
 #(define-void-function (lang)
@@ -281,8 +259,6 @@ ekmelicOutputSuffix =
           (list (string-append "-" (ly:wide-char->utf-8 #x2009)) f))
         f))))
 
-
-%% Initializations
 
 #(begin
   ;; global default scale
