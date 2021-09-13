@@ -15,6 +15,8 @@ import javafx.scene.input.MouseEvent
 import javafx.scene.layout.Pane
 import javafx.scene.paint.Color
 import javafx.scene.shape.Line
+import javafx.scene.shape.QuadCurve
+import javafx.scene.shape.Shape
 import kotlin.properties.Delegates
 
 class ScoreView(
@@ -183,7 +185,7 @@ class ScoreView(
         val rp = NoteHead.rightParentheses().scale(SECONDARY_PITCH_SCALE)
         lp.strokeProperty().bind(littleHead.root.fillProperty())
         rp.strokeProperty().bind(littleHead.root.fillProperty())
-        littleHead.xProperty().bind(binding(littleHead.yProperty(), head.yProperty(), head.xProperty()) {
+        littleHead.xProperty().bind(doubleBinding(littleHead.yProperty(), head.yProperty(), head.xProperty()) {
             if (littleHead.y == head.y) head.x + 35 else head.x + 15
         })
         littleHead.yProperty().bind(trill.secondaryPitch.getY())
@@ -384,9 +386,26 @@ class ScoreView(
         }
 
         override fun replaced(new: Disposition) {
+            deselectAll()
+        }
+
+        private fun deselectAll() {
             for (element in selected) {
+                if (element is NoteHead) {
+                    for (node in associatedNodes[element.element].orEmpty()) {
+                        when (node) {
+                            is QuadCurve -> {
+                            }
+                            is Shape -> {
+                                if (!node.fillProperty().isBound) node.fill = Color.BLACK
+                                if (!node.strokeProperty().isBound) node.stroke = Color.BLACK
+                            }
+                        }
+                    }
+                }
                 element.isSelected = false
             }
+            selected.clear()
         }
 
         override fun mouseClicked(ev: MouseEvent) {
@@ -395,13 +414,9 @@ class ScoreView(
         }
 
         fun select(element: SelectableElement?, extendSelection: Boolean = false) {
-            if (!extendSelection) {
-                for (el in selected) el.isSelected = false
-                selected.clear()
-            }
+            if (!extendSelection) deselectAll()
             if (element == null) return
             selected.add(element)
-            element.isSelected = true
             if (!extendSelection) {
                 when (element) {
                     is DynamicView -> element.dynamic.let { dynamicsSelector.select(it.value) }
@@ -414,9 +429,20 @@ class ScoreView(
                                 else el.pitch.value
                             accidentalSelector.select(pitch.accidental)
                         }
+                        for (node in associatedNodes[el].orEmpty()) {
+                            when (node) {
+                                is QuadCurve -> {
+                                }
+                                is Shape -> {
+                                    if (!node.fillProperty().isBound) node.fill = Color.CADETBLUE
+                                    if (!node.strokeProperty().isBound) node.stroke = Color.CADETBLUE
+                                }
+                            }
+                        }
                     }
                 }
             }
+            element.isSelected = true
         }
 
         override fun deleteElement() {
