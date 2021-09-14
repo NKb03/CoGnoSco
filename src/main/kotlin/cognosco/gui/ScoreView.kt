@@ -3,6 +3,7 @@ package cognosco.gui
 import cognosco.*
 import cognosco.gui.Shortcut.*
 import cognosco.gui.impl.*
+import cognosco.midi.MidiPlayer
 import cognosco.midi.PULSES_PER_BEAT
 import javafx.beans.binding.Bindings
 import javafx.beans.binding.DoubleBinding
@@ -24,7 +25,8 @@ class ScoreView(
     private val elementTypeSelector: ElementTypeSelector,
     private val accidentalSelector: AccidentalSelector,
     private val instrumentSelector: InstrumentSelector,
-    private val dynamicsSelector: DynamicSelector
+    private val dynamicsSelector: DynamicSelector,
+    private val player: MidiPlayer
 ) : Pane() {
     private val elements = mutableListOf<Element>()
     private val associatedNodes = mutableMapOf<Element, MutableList<Node>>()
@@ -83,6 +85,12 @@ class ScoreView(
             val g = if (i % 10 == 0) 0.3 else 0.7
             if (i % 2 != 0) l.strokeDashArray.addAll(2.0, 2.0)
             l.stroke = Color.gray(g)
+            if (i % 10 == 0) {
+                l.setOnMouseClicked {
+                    if (player.isPlaying)
+                        player.currentPulse = i * PULSES_PER_BEAT
+                }
+            }
             children.add(l)
         }
     }

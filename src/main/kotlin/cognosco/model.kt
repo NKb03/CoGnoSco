@@ -52,6 +52,7 @@ enum class Instrument(
     val clef: Clef,
     val transposition: String,
     val program: Int,
+    val bank: Int = 0,
     val percussionKey: Int? = null
 ) {
     Flute("Flöte", "Fl.", Woodwinds, Clef.Violin, "c'", 74),
@@ -63,13 +64,13 @@ enum class Instrument(
     Trombone("Posaune", "Pos.", Brass, Clef.Bass, "c'", 58),
     Tuba("Tuba", "Tba.", Brass, Clef.Bass, "c'", 59),
     Timpani("Pauke", "Pk.", InstrumentFamily.Timpani, Clef.Bass, "c'", 48),
-    SnareDrum("Snare Drum", "Sn.Dr.", Percussion, Clef.Percussion, "", 10, 38),
-    BassDrum("Bass Drum", "B.Dr.", Percussion, Clef.Percussion, "", 10, 36),
-    Cymbal("Becken", "Bck.", Percussion, Clef.Percussion, "", 10, 49),
-    Violins("Violinen", "Vl.", Strings, Clef.Violin, "c'", 41),
-    Violas("Viola", "Vla.", Strings, Clef.Alto, "c'", 42),
-    Violoncellos("Violoncello", "Vc.", Strings, Clef.Bass, "c'", 43),
-    Contrabasses("Kontrabass", "Kb.", Strings, Clef.Bass, "c", 44)
+    SnareDrum("Snare Drum", "Sn.Dr.", Percussion, Clef.Percussion, "", 10, percussionKey = 38),
+    BassDrum("Bass Drum", "B.Dr.", Percussion, Clef.Percussion, "", 10, percussionKey = 36),
+    Cymbal("Becken", "Bck.", Percussion, Clef.Percussion, "", 10, percussionKey = 49),
+    Violins("Violinen", "Vl.", Strings, Clef.Violin, "c'", 49),
+    Violas("Viola", "Vla.", Strings, Clef.Alto, "c'", 49),
+    Violoncellos("Violoncello", "Vc.", Strings, Clef.Bass, "c'", 49),
+    Contrabasses("Kontrabass", "Kb.", Strings, Clef.Bass, "c", 49)
 }
 
 enum class PitchName(val chromaticStep: Int) {
@@ -167,7 +168,7 @@ data class Pitch(val register: Int, val name: PitchName, val accidental: Acciden
 }
 
 enum class Dynamic(val midiVolume: Int) {
-    PPP(8), PP(22), P(36), MP(47), MF(64), F(85), FF(104), FFF(127);
+    PPP(8), PP(16), P(28), MP(40), MF(55), F(80), FF(104), FFF(127);
 
     override fun toString(): String = name.lowercase()
 }

@@ -13,25 +13,29 @@ interface MidiOutput {
 
     fun resume()
 
+    fun stopAll()
+
     interface NoteHandle {
         val active: Boolean
 
         val output: MidiOutput
 
-        fun noteOn(instrument: Instrument, pitch: Pitch?, initialDynamic: Dynamic)
+        fun setup()
+
+        fun setInstrument(instr: Instrument)
+
+        fun programChange(program: Int, bank: Int = 0)
+
+        fun noteOn(pitch: Pitch?, initialDynamic: Dynamic)
 
         fun noteOff()
 
-        fun trill(pitch: Pitch)
-
-        fun tremolo(pulsesPerRepetition: Int)
+        fun setVolume(volume: Int)
 
         fun gradualVolumeChange(targetPulse: Int, targetDynamic: Dynamic)
 
-        fun setInstrument(instrument: Instrument)
+        fun trill(secondaryPitch: Pitch)
 
-        fun programChange(program: Int)
-
-        fun setVolume(volume: Int)
+        fun tremolo(pulsesPerRepetition: Int)
     }
 }

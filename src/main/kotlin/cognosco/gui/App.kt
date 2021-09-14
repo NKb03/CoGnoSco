@@ -97,7 +97,7 @@ class App : Application() {
         accidentalSelector = AccidentalSelector()
         instrumentSelector = InstrumentSelector()
         dynamicSelector = DynamicSelector()
-        scoreView = ScoreView(typeSelector, accidentalSelector, instrumentSelector, dynamicSelector)
+        scoreView = ScoreView(typeSelector, accidentalSelector, instrumentSelector, dynamicSelector, player)
     }
 
     private fun handleUncaughtException(exc: Throwable) {

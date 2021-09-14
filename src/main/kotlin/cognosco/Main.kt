@@ -18,11 +18,12 @@ object Main {
             if (file != null && !file.exists()) {
                 throw CognoscoException("ERROR: Referenced file $file does not exist.")
             }
-            when (args.getOrElse(0) { "launch" }) {
+            when (val command = args.getOrElse(0) { "launch" }) {
                 "launch" -> launch(file)
-                "typeset" -> typeset(file ?: error("no file provided"))
-                "play" -> play(file ?: error("no file provided"))
+                "typeset" -> typeset(file ?: throw CognoscoException("no file provided"))
+                "play" -> play(file ?: throw CognoscoException("no file provided"))
                 "help" -> help()
+                else -> throw CognoscoException("unknown command $command, run cognosco help to see available commands")
             }
         } catch (e: CognoscoException) {
             System.err.println(e.message)

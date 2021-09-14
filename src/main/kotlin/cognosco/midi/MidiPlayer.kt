@@ -3,7 +3,7 @@ package cognosco.midi
 class MidiPlayer(private val output: MidiOutput) {
     private val listeners = mutableListOf<(Int) -> Unit>()
     private var pulseMap: Map<Int, List<Event>> = emptyMap()
-    private var currentPulse = 0
+    var currentPulse = 0
         @Synchronized set(value) {
             field = value
             listeners.forEach { it.invoke(value) }
@@ -34,6 +34,10 @@ class MidiPlayer(private val output: MidiOutput) {
     private inner class PlayerThread : Thread() {
         private val parent: Thread = currentThread()
 
+        init {
+            isDaemon = true
+        }
+
         override fun run() {
             val lastPulse = pulseMap.keys.maxOrNull() ?: return
             while (isPlaying && currentPulse <= lastPulse) {
@@ -62,6 +66,7 @@ class MidiPlayer(private val output: MidiOutput) {
     @Synchronized
     fun stop() {
         if (isPlaying) pause()
+        output.stopAll()
         currentPulse = 0
     }
 
