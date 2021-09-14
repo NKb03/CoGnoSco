@@ -15,11 +15,11 @@ fun Accidental.lilypond(): String = when (this) {
     QuarterToneAccidental.TreeQuarterSharp -> "tqs"
     is BendedAccidental -> {
         val suffix = when (bend) {
-            in -39..-25 -> "D"
+            in -39..-25 -> "dd"
             in -24..-6 -> "d"
             in -5..+5 -> ""
             in 6..24 -> "u"
-            in 25..39 -> "U"
+            in 25..39 -> "uu"
             else -> error("pitch bend out of range: $bend")
         }
         "${reference.lilypond()}$suffix"
