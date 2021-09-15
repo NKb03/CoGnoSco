@@ -31,22 +31,27 @@ fun GraphicalScore.createEvents(output: MidiOutput): List<Event> =
     elements.flatMap { element ->
         output.eventList {
             at(element.start.value * PULSES_PER_BEAT) {
-                setup()
                 val instr = element.instrument.value!!
                 setInstrument(instr)
-                if (instr.family == Strings) {
-                    when (element.type.value) {
-                        Percussive -> programChange(46)
-                        FastRepeat -> programChange(45)
-                        else -> {
-                        }
+                setPitch(element.pitch.value!!)
+                setDynamic(element.startDynamic.value!!)
+                when (element.type.value) {
+                    Trill -> {
+                        element as Trill
+                        trill(element.secondaryPitch.value)
+                    }
+                    Percussive -> {
+                        if (instr.family == Strings) programChange(46)
+                    }
+                    FastRepeat -> {
+                        if (instr.family == Strings) programChange(45, 128)
+                        else tremolo(4)
+                    }
+                    Repeat -> tremolo(32)
+                    else -> {
                     }
                 }
-                noteOn(element.pitch.value, element.startDynamic.value)
-                when {
-                    element is Trill -> trill(element.secondaryPitch.value)
-                    element.type.value == Repeat -> tremolo(32)
-                }
+                noteOn()
             }
             if (element is ContinuousElement) {
                 var start = element.start.value

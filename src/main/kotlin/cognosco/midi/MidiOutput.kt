@@ -20,13 +20,15 @@ interface MidiOutput {
 
         val output: MidiOutput
 
-        fun setup()
-
         fun setInstrument(instr: Instrument)
 
         fun programChange(program: Int, bank: Int = 0)
 
-        fun noteOn(pitch: Pitch?, initialDynamic: Dynamic)
+        fun setPitch(pitch: Pitch)
+
+        fun setDynamic(dynamic: Dynamic)
+
+        fun noteOn()
 
         fun noteOff()
 

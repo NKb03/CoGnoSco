@@ -87,8 +87,7 @@ class ScoreView(
             l.stroke = Color.gray(g)
             if (i % 10 == 0) {
                 l.setOnMouseClicked {
-                    if (player.isPlaying)
-                        player.currentPulse = i * PULSES_PER_BEAT
+                    if (!player.isPlaying) player.currentPulse = i * PULSES_PER_BEAT
                 }
             }
             children.add(l)

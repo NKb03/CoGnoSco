@@ -29,6 +29,7 @@ import kotlin.reflect.typeOf
 
 private val json = Json {
     prettyPrint = true
+    prettyPrintIndent = "  "
     serializersModule = SerializersModule {
         contextual(Accidental.Serializer)
     }
@@ -51,11 +52,11 @@ enum class Instrument(
     val family: InstrumentFamily,
     val clef: Clef,
     val transposition: String,
-    val program: Int,
+    val program: Int = 0,
     val bank: Int = 0,
-    val percussionKey: Int? = null
+    val percussionKey: Int = -1
 ) {
-    Flute("Flöte", "Fl.", Woodwinds, Clef.Violin, "c'", 74),
+    Flute("Flöte", "Fl.", Woodwinds, Clef.Violin, "c'", 74, 128),
     Oboe("Oboe", "Ob.", Woodwinds, Clef.Violin, "c'", 69),
     Clarinet("B♭ Klarinette", "B♭ Kl.", Woodwinds, Clef.Violin, "bf", 72),
     Saxophone("Sopransaxophon", "S.sax.", Woodwinds, Clef.Violin, "bf", 65),
@@ -64,9 +65,9 @@ enum class Instrument(
     Trombone("Posaune", "Pos.", Brass, Clef.Bass, "c'", 58),
     Tuba("Tuba", "Tba.", Brass, Clef.Bass, "c'", 59),
     Timpani("Pauke", "Pk.", InstrumentFamily.Timpani, Clef.Bass, "c'", 48),
-    SnareDrum("Snare Drum", "Sn.Dr.", Percussion, Clef.Percussion, "", 10, percussionKey = 38),
-    BassDrum("Bass Drum", "B.Dr.", Percussion, Clef.Percussion, "", 10, percussionKey = 36),
-    Cymbal("Becken", "Bck.", Percussion, Clef.Percussion, "", 10, percussionKey = 49),
+    SnareDrum("Snare Drum", "Sn.Dr.", Percussion, Clef.Percussion, "", percussionKey = 38),
+    BassDrum("Bass Drum", "B.Dr.", Percussion, Clef.Percussion, "", percussionKey = 36),
+    Cymbal("Becken", "Bck.", Percussion, Clef.Percussion, "", percussionKey = 49),
     Violins("Violinen", "Vl.", Strings, Clef.Violin, "c'", 49),
     Violas("Viola", "Vla.", Strings, Clef.Alto, "c'", 49),
     Violoncellos("Violoncello", "Vc.", Strings, Clef.Bass, "c'", 49),
@@ -91,11 +92,11 @@ sealed interface Accidental {
 
         override fun deserialize(decoder: Decoder): Accidental {
             val str = decoder.decodeString()
-            val bend = when (str.getOrNull(1)) {
-                'u' -> +13
-                'U' -> +31
-                'd' -> -13
-                'D' -> -31
+            val bend = when (str.drop(1)) {
+                "u" -> +13
+                "uu" -> +31
+                "d" -> -13
+                "dd" -> -31
                 else -> +-0
             }
             val reg = RegularAccidental.map[str.take(1)]
@@ -168,7 +169,7 @@ data class Pitch(val register: Int, val name: PitchName, val accidental: Acciden
 }
 
 enum class Dynamic(val midiVolume: Int) {
-    PPP(8), PP(16), P(28), MP(40), MF(55), F(80), FF(104), FFF(127);
+    PPP(3), PP(10), P(20), MP(30), MF(55), F(80), FF(104), FFF(127);
 
     override fun toString(): String = name.lowercase()
 }
@@ -492,7 +493,7 @@ class DiscreteNoise(override val type: Property<Type>) : AbstractElement() {
 data class GraphicalScore(val elements: List<Element>) {
     fun encodeToString(): String {
         val array = JsonArray(elements.map { it.serialize() })
-        return array.toString()
+        return json.encodeToString(array)
     }
 
     companion object {
