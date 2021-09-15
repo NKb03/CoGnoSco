@@ -18,6 +18,7 @@ import javafx.scene.paint.Color
 import javafx.scene.shape.Line
 import javafx.scene.shape.QuadCurve
 import javafx.scene.shape.Shape
+import javafx.scene.text.Font
 import javafx.scene.text.Text
 import kotlin.properties.Delegates
 
@@ -89,6 +90,11 @@ class ScoreView(
                 l.setOnMouseClicked {
                     if (!player.isPlaying) player.currentPulse = i * PULSES_PER_BEAT
                 }
+                val bar = Text((i / 2).toString())
+                bar.font = Font(12.0)
+                bar.xProperty().bind(l.startXProperty().add(3))
+                bar.y = 12.0
+                children.add(bar)
             }
             children.add(l)
         }
