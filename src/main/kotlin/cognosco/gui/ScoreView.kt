@@ -143,7 +143,8 @@ class ScoreView(
         noteHeads[element] = head
         val dynamic = DynamicView(head.xProperty(), head.yProperty(), element.startDynamic, element.start)
         startDynamics[element] = dynamic
-        add(element, head, dynamic)
+        val instr = InstrumentNameView(head, element)
+        add(element, head, dynamic, instr)
         if (element is PitchedElement) {
             head.yProperty().bind(element.pitch.getY())
             val accidental = AccidentalView(element.pitch.map { it.accidental }, head)
