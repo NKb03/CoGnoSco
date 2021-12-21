@@ -1,0 +1,460 @@
+TrianGMGS Soundfont - v1.3c
+This is a GM soundfont with 19 drumsets and 309 GS variation patches.
+Various others
+2.1
+0 (0): Concert Piano
+1 (0): Bright Piano
+2 (0): Electric Grand Piano
+3 (0): Honky-tonk Piano
+4 (0): Rhodes Piano
+5 (0): Electric Piano
+6 (0): Harpsichord
+7 (0): Clavinet
+8 (0): Celesta
+9 (0): Glockenspiel
+10 (0): Music Box
+11 (0): Vibraphone
+12 (0): Marimba
+13 (0): Xylophone
+14 (0): Tubular Bells
+15 (0): Dulcimer
+16 (0): Drawbar Organ
+17 (0): Percussive Organ
+18 (0): Rock Organ
+19 (0): Church Organ
+20 (0): Reed Organ
+21 (0): Accordion
+22 (0): Harmonica
+23 (0): Bandoneon
+24 (0): Nylon Guitar
+25 (0): DoubleTrack Guitar
+26 (0): Jazz Guitar
+27 (0): Clean Guitar
+28 (0): Muted Guitar
+29 (0): Overdrive Guitar
+30 (0): Distortion Guitar
+31 (0): Guitar Harmonics
+32 (0): Acoustic Bass
+33 (0): Fingered Bass
+34 (0): Picked Bass
+35 (0): Fretless Bass
+36 (0): Slap Bass 1
+37 (0): Slap Bass 2
+38 (0): Synth Bass 1
+39 (0): Synth Bass 2
+40 (0): Violin
+41 (0): Viola
+42 (0): Cello
+43 (0): Contrabass
+44 (0): Tremolo Strings
+45 (0): Pizzicato Strings
+46 (0): Orchestral Harp
+47 (0): Timpani
+48 (0): Orchestral Strings
+49 (0): Slow Strings
+50 (0): Synth Strings 1
+51 (0): Synth Strings 2
+52 (0): Choir Aahs
+53 (0): Voice Oohs
+54 (0): Synth Choir
+55 (0): Orchestra Hit
+56 (0): JL Trumpet
+57 (0): JL Trombone
+58 (0): Tuba
+59 (0): Muted Trumpet
+60 (0): French Horn
+61 (0): Brass Section
+62 (0): Synth Brass 1
+63 (0): Synth Brass 2
+64 (0): Soprano Sax
+65 (0): Alto Sax
+66 (0): Tenor Sax
+67 (0): Baritone Sax
+68 (0): Oboe
+69 (0): Cor Anglais Florest
+70 (0): Bassoon
+71 (0): Clarinet
+72 (0): Piccolo
+73 (0): Flute
+74 (0): Recorder
+75 (0): Pan Flute
+76 (0): Blown Bottle
+77 (0): Shakuhachi
+78 (0): Whistle
+79 (0): Ocarina
+80 (0): Square Wave
+81 (0): Saw Wave
+82 (0): Calliope Lead
+83 (0): Chiffer Lead
+84 (0): Charang Lead
+85 (0): Solo Vox
+86 (0): 5th Saw Wave
+87 (0): Bass & Lead
+88 (0): Fantasia
+89 (0): Warm Pad
+90 (0): Polysynth
+91 (0): Space Vox
+92 (0): Bowed Glass
+93 (0): Metal Pad
+94 (0): Halo Pad
+95 (0): Sweep Pad
+96 (0): Ice Rain
+97 (0): Soundtrack
+98 (0): Crystal
+99 (0): Atmosphere
+100 (0): Brightness
+101 (0): Goblin
+102 (0): Echo Drops
+103 (0): Sci-Fi
+104 (0): Sitar
+105 (0): Banjo
+106 (0): Shamisen
+107 (0): Koto
+108 (0): Kalimba
+109 (0): Bagpipes
+110 (0): Fiddle
+111 (0): Shehnai
+112 (0): Tinkle Bell
+113 (0): Agogo
+114 (0): Steel Drums
+115 (0): Woodblock
+116 (0): Taiko Drum
+117 (0): Melodic Tom
+118 (0): Synth Drum
+119 (0): Reverse Cymbal
+120 (0): Guitar Fret Noise
+121 (0): Breath Noise
+122 (0): Seashore
+123 (0): Bird Tweet
+124 (0): Telephone Ring
+125 (0): Helicopter
+126 (0): Applause
+127 (0): Gunshot
+0 (128): Glockenspiel-1
+2 (128): EG+Rhodes 1
+4 (128): Rhodes EP
+8 (128): Pop Celesta
+9 (128): Ethan's Glock
+26 (128): Mellow Gt
+28 (128): Muted Dis.Gt
+29 (128): AMP Guitar
+30 (128): OdGtLP-JP
+33 (128): Finger Bass 2
+37 (128): Slap Bass 2-1
+38 (128): Synth Bass 101
+39 (128): Syn.Bass 201
+40 (128): Violin Atk
+41 (128): Viola Atk
+44 (128): Mono Strings Trem
+48 (128): Strings
+49 (128): Mono Strings Slow
+50 (128): OB Strings
+52 (128): Conc. Choir Mono
+56 (128): Brass Trumpet
+57 (128): Trombone 2-1
+59 (128): Muted Trumpet 2
+60 (128): Solo French Horn
+61 (128): Brass Section Mono
+69 (128): English Horn
+73 (128): Flute 2
+78 (128): Luke's Tin Whistle
+80 (128): MG Square
+81 (128): SAW WAVE 1
+87 (128): Big&Raw
+88 (128): Fantasia 2
+89 (128): Trance Sense
+90 (128): 80's PolySyn
+91 (128): Heaven II
+95 (128): Polar Pad
+97 (128): Ancestral
+98 (128): Synth Mallet-1
+102 (128): Echo Bell-1
+107 (128): Bellpad
+114 (128): Steel Drum
+115 (128): Castanets
+120 (128): Gtr. Cut Noise
+121 (128): Fl. Key Click
+122 (128): Rain
+123 (128): Dog
+124 (128): Telephone 2
+125 (128): Car-Engine
+126 (128): Laughs
+127 (128): Machine Gun
+0 (256): Glockenspiel-1
+1 (256): Rock Piano
+2 (256): EG+Rhodes 2
+6 (256): Harpsichord3
+39 (256): Modular Bass
+40 (256): Slow Violin
+48 (256): Cadenza Strings
+50 (256): StackStrings
+80 (256): Hollow Mini
+82 (256): Pure PanLead
+87 (256): Fat & Perky
+91 (256): SC Heaven
+92 (256): JP8 Sqr Pad
+96 (256): African Wood
+97 (256): Prologue
+102 (256): Echo Pan
+120 (256): String Slap
+122 (256): Thunder
+123 (256): Horse Gallop
+124 (256): Door Creak
+125 (256): Car Skid
+126 (256): Screaming
+127 (256): Laser Gun
+0 (384): Synth Calliope
+39 (384): Seq Bass
+50 (384): JP Strings
+55 (384): Euro Hit
+80 (384): Mellow FM
+81 (384): Feline GR
+89 (384): Rotary Strng
+96 (384): Anklung Pad
+98 (384): Round Glock
+104 (384): Sitar 3
+120 (384): Gt.CutNz.2
+122 (384): Wind
+123 (384): Bird 2
+124 (384): Door Slam
+125 (384): Car-Pass
+126 (384): Punch
+127 (384): Explosion
+30 (512): Dist.Fast :
+35 (512): Syn Fretless
+80 (512): CC Solo
+87 (512): JP8 BsLead(sybs2sq)
+96 (512): Rattle Pad
+98 (512): Loud Glock
+99 (512): HollowReleas
+102 (512): Big Panner
+120 (512): Dist.CutNz.
+122 (512): Stream
+123 (512): Scratch 1
+124 (512): Scratch
+125 (512): Car-Crash
+126 (512): Heart Beat
+80 (640): Shmoog
+81 (640): Velo Lead
+98 (640): GlockenChime
+120 (640): Bass Slide
+122 (640): Bubble
+124 (640): Windchimes
+125 (640): Siren
+126 (640): Footsteps
+80 (768): LM Square
+81 (768): GR-300
+120 (768): Pick Scrape
+122 (768): Thunder 2
+125 (768): Train
+126 (768): Applause 2
+81 (896): LA Saw
+125 (896): Jetplane
+0 (1024): Piano 1w
+1 (1024): Piano 2w
+2 (1024): Piano 3w
+3 (1024): Honky-tonkw
+4 (1024): Detuned EP 1
+5 (1024): Detuned EP 2
+6 (1024): Coupled Harpsichord
+7 (1024): Comp Clav.
+11 (1024): Vib.w
+12 (1024): Marimba w
+14 (1024): Church Bell
+16 (1024): Detuned Organ 1
+17 (1024): Detuned Organ 2
+19 (1024): Church Organ 2
+21 (1024): Italian Accordion
+24 (1024): Ukulele
+25 (1024): 12-str. Guitar
+26 (1024): Hawaiian Guitar
+27 (1024): Chorus Guitar
+28 (1024): Funk Guitar
+30 (1024): Feedback Guitar
+31 (1024): Gt. Feedback
+33 (1024): ChorusJazzBs
+38 (1024): Acid Bass
+39 (1024): Synth Bass 4
+40 (1024): Slow Violin-1
+48 (1024): Orchestral Pad
+49 (1024): Legato Str.
+50 (1024): Syn Strings 3
+52 (1024): St.ChoirAahs
+55 (1024): Impact Hit
+56 (1024): Fast Falls
+61 (1024): Brass 2
+62 (1024): Synth Brass 3
+63 (1024): Synth Brass 4
+80 (1024): 2600 Sine
+81 (1024): Doctor Solo
+95 (1024): Converge
+100 (1024): Org Bell
+103 (1024): Dream Pad
+104 (1024): Tambra
+107 (1024): Taisho Koto
+113 (1024): Atarigane
+115 (1024): Castanets
+116 (1024): Concert BD
+117 (1024): Melo Tom 2
+118 (1024): 808 Tom
+124 (1024): ScratchKey
+125 (1024): Starship
+1 (1152): Rock Piano w
+11 (1152): Vibraphones
+14 (1152): Carillon
+25 (1152): Nylon+Steel
+30 (1152): Feedback Gt.2
+38 (1152): TB303 Bass
+48 (1152): Strings
+52 (1152): Melted Choir
+55 (1152): Philly Hit
+80 (1152): Sine Lead
+95 (1152): Shwimmer
+103 (1152): Silky Pad
+118 (1152): Elec Perc
+125 (1152): Burst Noise
+4 (1280): SilentRhodes
+52 (1280): Church Choir
+55 (1280): Double Hit
+80 (1280): KG Lead
+95 (1280): Celestial Pd
+98 (1280): Music Bell
+112 (1280): Gamelan Gong
+118 (1280): Sine Perc.
+122 (1280): Rain 2
+124 (1280): Phono Noise
+0 (1408): Piano & Str. Fade
+1 (1408): Piano & Str. Sus
+4 (1408): Tine & FM EP
+5 (1408): Piano & FM EP
+8 (1408): Tinkling Bells
+14 (1408): Bell Tower
+38 (1408): Techno Bass
+39 (1408): Pulse Bass
+48 (1408): Choir Str.
+49 (1408): Stereo Strings Velo
+50 (1408): Synth Strings 4
+51 (1408): Synth Strings 5
+61 (1408): Brass Section 3
+78 (1408): Whistlin'
+81 (1408): Sawtooth Stab
+87 (1408): Doctor's Solo
+88 (1408): Harpicshord Pad
+89 (1408): Solar Wind
+96 (1408): Mystery Pad
+98 (1408): Synth Chime
+100 (1408): Bright Saw Stack
+112 (1408): St Gamelan
+119 (1408): Cymbal Crash
+121 (1408): Filter Snap
+124 (1408): MC-500 Beep
+127 (1408): Interference
+0 (1536): Bell Piano
+4 (1536): Bell Tine EP
+10 (1536): Christmas Bells
+27 (1536): Clean Guitar 2
+38 (1536): Mean Saw Bass
+48 (1536): Full Orchestra
+49 (1536): Mono Strings Velo
+80 (1536): Square Lead 2
+81 (1536): Saw Lead 2
+88 (1536): Fantasia 2
+89 (1536): Solar Wind 2
+119 (1536): Tambourine 1
+122 (1536): White Noise Wave
+127 (1536): Shooting Star
+48 (1664): Woodwind Choir
+80 (1664): Square Lead 3
+81 (1664): Saw Lead 3
+88 (1664): Night Vision
+0 (2048): Piano 1d
+4 (2048): E.Piano 1w
+5 (2048): E.Piano 2v
+6 (2048): Harpsi.w
+12 (2048): Barafon
+16 (2048): 60's Organ 1
+18 (2048): Rotary Org.S
+24 (2048): Nylon Gt.o
+25 (2048): Mandolin
+28 (2048): Funk Gt.2
+29 (2048): Overdrv Wah
+30 (2048): Power Guitar
+31 (2048): Ac.Gt.Harmnx
+39 (2048): Rubber Bass
+55 (2048): Lo Fi Rave
+56 (2048): Trumpet Doiks
+60 (2048): Horns Orch
+61 (2048): Brass Fall
+62 (2048): Analog.Brass 1
+63 (2048): Analog.Brass 2
+71 (2048): Multi Wind
+80 (2048): P5 Square
+81 (2048): Waspy Synth
+84 (2048): P5 Sync Lead
+104 (2048): Tamboura
+111 (2048): Hichiriki
+112 (2048): RAMA Cymbal
+113 (2048): Tambourine
+117 (2048): Rash SD
+122 (2048): Pink Noise
+7 (2176): Phase Clav
+12 (2176): Barafon 2
+30 (2176): Power Gt2
+80 (2176): OB Square
+90 (2176): ReverseSweep
+122 (2176): White Noise
+30 (2304): 5th Dist.
+80 (2304): JP-8 Square
+84 (2432): 5th DecaSync
+38 (2560): Hammer
+120 (2816): A.Bs Slap Nz (1)
+120 (2944): A.Bs Slap Nz (2)
+0 (3072): Piano+Str.
+4 (3072): Wulitzer Piano
+5 (3072): Hard FM EP
+6 (3072): Main Harpsi Stereo
+16 (3072): Cheese Organ
+18 (3072): Rotary Org.F
+19 (3072): Organ Flute
+24 (3072): Guitar Effects
+30 (3072): Rock Rhythm
+48 (3072): Velo Strings
+56 (3072): Trumpet Shakes
+61 (3072): Octave Brass
+115 (3072): Finger Snaps
+120 (3072): A.Bs Slap Nz (3)
+0 (3200): Piano+Str2
+30 (3200): Rock Rhythm2
+56 (3200): Warm Tp
+0 (3328): Piano+Choir1
+30 (3328): Dist Rtm GTR
+16 (3456): OB Saw Lead
+24 (4096): Nylon Gt.2
+48 (4096): Oct Strings1
+105 (4096): Pi Pa
+48 (4224): Oct Strings2
+81 (4224): P5 Saw Lead
+81 (4480): Oct Saw Lead
+48 (5120): 60s Strings
+81 (5120): SequencedSaw (1)
+81 (5248): SequencedSaw (2)
+81 (5888): SequencedSaw
+0 (0): Standard 1
+1 (0): Standard 2
+7 (0): Room 1
+8 (0): Room 2
+16 (0): Power
+17 (0): Slam Set
+24 (0): Electronic
+25 (0): TR-808
+26 (0): Dance
+29 (0): TR-707
+30 (0): TR-909
+32 (0): Jazz
+40 (0): Brush
+48 (0): Orchestra
+49 (0): Ethnic
+50 (0): Kick & Snare (GS)
+56 (0): SFX
+57 (0): Rhythm FX (SC-88)
+127 (0): CM-64/32L

@@ -12,11 +12,13 @@ sealed class Shortcut(private vararg val shortcuts: String) {
 
     object Escape : Shortcut("ESCAPE")
     object Delete : Shortcut("DELETE")
-    object Enter : Shortcut("ENTER")
-    object Down : Shortcut("Ctrl+DOWN")
-    object Up : Shortcut("Ctrl+UP")
-    object Right : Shortcut("Ctrl+RIGHT")
-    object Left : Shortcut("Ctrl+LEFT")
+    object Confirm : Shortcut("ENTER")
+    object MoveDown : Shortcut("Ctrl+DOWN")
+    object MoveUp : Shortcut("Ctrl+UP")
+    object MoveRight : Shortcut("Ctrl+RIGHT")
+    object MoveLeft : Shortcut("Ctrl+LEFT")
+    object MoveElementLeft : Shortcut("Ctrl+Shift+LEFT")
+    object MoveElementRight : Shortcut("Ctrl+Shift+RIGHT")
     object SelectType : Shortcut("T")
     object SelectInstrument : Shortcut("I")
     object SelectDynamic : Shortcut("D")
@@ -38,7 +40,8 @@ sealed class Shortcut(private vararg val shortcuts: String) {
 
     companion object {
         private val shortcuts = listOfNotNull(
-            Delete, Down, Up, Right, Left, Enter,
+            Delete, Confirm,
+            MoveDown, MoveUp, MoveRight, MoveLeft, MoveElementRight, MoveElementLeft,
             SelectType, SelectInstrument, SelectDynamic, SelectBend,
             Louder, Quieter,
             Sharp, Flat, Natural,

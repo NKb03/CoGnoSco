@@ -16,7 +16,7 @@ class RTMidiOutput(synthesizer: Synthesizer) : MidiOutput {
 
     init {
         if (!synthesizer.isOpen) synthesizer.open()
-        val soundfont = MidiSystem.getSoundbank(File("/home/nikolaus/Downloads/TrianGMGS.sf2"))
+        val soundfont = MidiSystem.getSoundbank(File("/home/nikolaus/Musik/soundfonts/TrianGMGS.sf2"))
         synthesizer.loadAllInstruments(soundfont)
         percussionChannel = freeChannels.removeAt(9)
     }

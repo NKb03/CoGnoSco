@@ -39,8 +39,8 @@ task standaloneJar(type: Jar) {
 }
 
 dependencies {
-    compile 'org.jetbrains.kotlin:kotlin-stdlib:1.5.30'
-    compile 'org.jetbrains.kotlin:kotlin-reflect:1.5.30'
+    compile 'org.jetbrains.kotlin:kotlin-stdlib'
+    compile 'org.jetbrains.kotlin:kotlin-reflect'
     compile 'org.controlsfx:controlsfx:11.1.0'
-    compile 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.2'
+    compile 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.1'
 }

@@ -314,34 +314,38 @@ class ScoreView(
         override fun handleShortcut(ev: Shortcut) {
             when (ev) {
                 Delete -> deleteElement()
-                Left -> moveLeft()
-                Right -> moveRight()
-                Up -> moveUp()
-                Down -> moveDown()
+                MoveLeft -> move(-1)
+                MoveRight -> move(+1)
+                MoveElementLeft -> moveElement(-1)
+                MoveElementRight -> moveElement(+1)
+                MoveUp -> moveUp()
+                MoveDown -> moveDown()
                 else -> {
                 }
             }
         }
 
-        private fun moveLeft() {
+        private fun move(delta: Int) {
             withElement { element, head ->
                 if (head.scaleX == 1.0) {
-                    element.start.value -= 1
+                    element.start.value += delta
                 }
             }
             withDynamic { element ->
-                element.time.value -= 1
+                element.time.value += delta
             }
         }
 
-        private fun moveRight() {
+        private fun moveElement(delta: Int) {
             withElement { element, head ->
                 if (head.scaleX == 1.0) {
-                    element.start.value += 1
+                    element.start.value += delta
+                    if (element is ContinuousElement) {
+                        for (phase in element.phases.value) {
+                            phase.end.value += delta
+                        }
+                    }
                 }
-            }
-            withDynamic { element ->
-                element.time.value += 1
             }
         }
 
@@ -594,7 +598,7 @@ class ScoreView(
         }
 
         override fun handleShortcut(ev: Shortcut) {
-            if (ev == Enter && element.phases.value.isNotEmpty()) {
+            if (ev == Confirm && element.phases.value.isNotEmpty()) {
                 finish()
             }
         }
@@ -662,9 +666,9 @@ class ScoreView(
 
         override fun handleShortcut(ev: Shortcut) {
             when (ev) {
-                Up -> trill.secondaryPitch.value = trill.secondaryPitch.value.up()
-                Down -> trill.secondaryPitch.value = trill.secondaryPitch.value.down()
-                Enter -> finish()
+                MoveUp -> trill.secondaryPitch.value = trill.secondaryPitch.value.up()
+                MoveDown -> trill.secondaryPitch.value = trill.secondaryPitch.value.down()
+                Confirm -> finish()
                 else -> {
                 }
             }
@@ -727,6 +731,7 @@ class ScoreView(
             for (i in 7..17) {
                 val l = Line(0.0, i * PITCH_H * 2.0, W.toDouble(), i * PITCH_H * 2.0)
                 l.strokeWidth = if (i == 12) 5.0 else 3.0
+                l.stroke = Color.GRAY
                 children.add(l)
             }
         }

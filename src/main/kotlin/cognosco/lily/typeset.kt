@@ -1,6 +1,8 @@
 package cognosco.lily
 
 import cognosco.*
+import cognosco.SimplePitchedContinuousElement.Type.FastRepeat
+import cognosco.SimplePitchedContinuousElement.Type.Repeat
 import java.io.File
 
 private fun PitchName.lilypond(): String = name.lowercase()
@@ -46,9 +48,9 @@ private fun getTechnique(type: Element.Type<Element>, instrument: Instrument) = 
     Trill -> Technique.Ordinario
     SimplePitchedContinuousElement.Type.Noisy ->
         if (instrument.family == InstrumentFamily.Strings) Technique.ColLegnoTratto else Technique.Noisy
-    SimplePitchedContinuousElement.Type.FastRepeat ->
+    FastRepeat ->
         if (instrument.family == InstrumentFamily.Strings) Technique.Ordinario else Technique.FlutterTongue
-    SimplePitchedContinuousElement.Type.Repeat -> Technique.Ordinario
+    Repeat -> Technique.Ordinario
     SimplePitchedContinuousElement.Type.Regular -> Technique.Ordinario
     ContinuousNoise.Type.Breath -> TODO()
     ContinuousNoise.Type.DrumRoll -> Technique.DrumRoll
@@ -66,19 +68,11 @@ private fun ElementTypesetter.typesetElement(element: Element, instrument: Instr
         +"\\parenthesize"
         addNote(element.secondaryPitch.value, "16", duration = 0)
     } else {
-        val type = if (element is SimplePitchedContinuousElement) {
-            when (element.type.value) {
-                SimplePitchedContinuousElement.Type.FastRepeat -> {
-                    +"\\repeat tremolo 8"
-                    "64"
-                }
-                SimplePitchedContinuousElement.Type.Repeat -> {
-                    +"\\repeat tremolo 4"
-                    "32"
-                }
-                else -> "8"
-            }
-        } else "8"
+        val type = when (element.type.value) {
+            FastRepeat -> "8:64"
+            Repeat -> "8:16"
+            else -> "8"
+        }
         addNote(pitch, type)
         addDynamic(element.startDynamic.value)
     }
