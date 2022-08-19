@@ -1,6 +1,9 @@
 package cognosco.lily
 
-import cognosco.*
+import cognosco.Element
+import cognosco.Instrument
+import cognosco.InstrumentFamily
+import cognosco.Time
 
 data class Score(val orchestra: Orchestra, val parts: Map<Staff, Part>, val duration: Time)
 
@@ -53,7 +56,7 @@ val myOrchestra = orchestra(
         InstrumentFamily.Strings,
         first(Instrument.Violins), second(Instrument.Violins),
         staff(Instrument.Violas),
-        first(Instrument.Violoncellos), second(Instrument.Violoncellos),
+        first(Instrument.Violoncelli), second(Instrument.Violoncelli),
         staff(Instrument.Contrabasses)
     )
 )

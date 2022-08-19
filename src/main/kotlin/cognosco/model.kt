@@ -4,6 +4,8 @@ package cognosco
 
 import cognosco.Element.Companion.p
 import cognosco.InstrumentFamily.*
+import cognosco.QuarterToneAccidental.*
+import cognosco.RegularAccidental.*
 import cognosco.gui.impl.flatMap
 import cognosco.gui.impl.map
 import cognosco.gui.impl.zipWithBy
@@ -23,6 +25,8 @@ import kotlinx.serialization.json.*
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.contextual
 import java.io.File
+import kotlin.math.log2
+import kotlin.math.pow
 import kotlin.reflect.KProperty0
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
@@ -40,9 +44,9 @@ enum class InstrumentFamily {
 }
 
 enum class Clef(val middleLinePitch: Pitch?) {
-    Violin(Pitch(4, PitchName.B, RegularAccidental.Natural)),
-    Alto(Pitch(4, PitchName.C, RegularAccidental.Natural)),
-    Bass(Pitch(3, PitchName.D, RegularAccidental.Natural)),
+    Violin(Pitch(4, PitchName.B, Natural)),
+    Alto(Pitch(4, PitchName.C, Natural)),
+    Bass(Pitch(3, PitchName.D, Natural)),
     Percussion(null);
 }
 
@@ -70,7 +74,7 @@ enum class Instrument(
     Cymbal("Becken", "Bck.", Percussion, Clef.Percussion, "", percussionKey = 49),
     Violins("Violinen", "Vl.", Strings, Clef.Violin, "c'", 49),
     Violas("Viola", "Vla.", Strings, Clef.Alto, "c'", 49),
-    Violoncellos("Violoncello", "Vc.", Strings, Clef.Bass, "c'", 49),
+    Violoncelli("Violoncello", "Vc.", Strings, Clef.Bass, "c'", 49),
     Contrabasses("Kontrabass", "Kb.", Strings, Clef.Bass, "c", 49)
 }
 
@@ -124,10 +128,10 @@ enum class RegularAccidental(val chromaticSteps: Int) : Accidental {
 }
 
 enum class QuarterToneAccidental(override val reference: RegularAccidental, override val bend: Int) : Accidental {
-    QuarterFlat(RegularAccidental.Natural, -50),
-    QuarterSharp(RegularAccidental.Natural, +50),
-    TreeQuarterFlat(RegularAccidental.Flat, -50),
-    TreeQuarterSharp(RegularAccidental.Sharp, +50);
+    QuarterFlat(Natural, -50),
+    QuarterSharp(Natural, +50),
+    TreeQuarterFlat(Flat, -50),
+    TreeQuarterSharp(Sharp, +50);
 
     companion object {
         val map = values().associateBy { it.lilypond() }
@@ -140,7 +144,7 @@ data class BendedAccidental(override val reference: RegularAccidental, override 
 }
 
 @Serializable
-data class Pitch(val register: Int, val name: PitchName, val accidental: Accidental) {
+data class Pitch(val register: Int, val name: PitchName, val accidental: Accidental) : Comparable<Pitch> {
     fun up(): Pitch =
         if (name == PitchName.B) Pitch(register + 1, PitchName.C, accidental)
         else copy(name = PitchName.values()[name.diatonicStep + 1])
@@ -157,19 +161,77 @@ data class Pitch(val register: Int, val name: PitchName, val accidental: Acciden
 
     val cent get() = chromaticStep * 100 + accidental.bend
 
+    val frequency: Double get() = 2.0.pow(cent / 1200.0) * C0
+
+    val enharmonicEquivalent
+        get() = fromChromaticStep(chromaticStep, accidental.bend, preferFlat = accidental.reference == Sharp)
+
     operator fun minus(p: Pitch): Int = diatonicStep - p.diatonicStep
 
+    override fun compareTo(other: Pitch): Int = this.cent - other.cent
+
     companion object {
+        private const val C0 = 16.35
+
         fun fromDiatonicStep(step: Int, accidental: Accidental): Pitch {
             val register = step / 7
             val pitchName = PitchName.values()[step % 7]
             return Pitch(register, pitchName, accidental)
         }
+
+        fun fromFrequency(freq: Double): Pitch {
+            val cent = (1200 * log2(freq / C0)).toInt()
+            var chromaticStep = cent / 100
+            var bend = cent % 100
+            if (bend > 50) {
+                chromaticStep++
+                bend -= 100
+            }
+            return fromChromaticStep(chromaticStep, bend, preferFlat = false)
+        }
+
+        private fun fromChromaticStep(
+            chromaticStep: Int,
+            bend: Int,
+            preferFlat: Boolean
+        ): Pitch {
+            var register = chromaticStep / 12
+            var step = chromaticStep
+            while (step < 0) {
+                step += 12
+                register -= 1
+            }
+            step %= 12
+            val name =
+                if (preferFlat) PitchName.values().first { it.chromaticStep >= step }
+                else PitchName.values().last { it.chromaticStep <= step }
+            val accidental = getAccidental(name, step, bend)
+            return Pitch(register, name, accidental)
+        }
+
+        private fun getAccidental(reference: PitchName, chromaticStep: Int, bend: Int): Accidental {
+            val regularAccidental = when {
+                chromaticStep > reference.chromaticStep -> Sharp
+                chromaticStep < reference.chromaticStep -> Flat
+                else -> Natural
+            }
+            val accidental = when {
+                bend in -5..5 -> regularAccidental
+                regularAccidental == Sharp && bend >= 40 -> TreeQuarterSharp
+                regularAccidental == Natural && bend >= 40 -> QuarterSharp
+                regularAccidental == Flat && bend >= 40 -> QuarterFlat
+                regularAccidental == Sharp && bend <= -40 -> QuarterSharp
+                regularAccidental == Natural && bend <= -40 -> QuarterFlat
+                regularAccidental == Flat && bend <= -40 -> TreeQuarterFlat
+                else -> BendedAccidental(regularAccidental, bend)
+            }
+            return accidental
+        }
     }
 }
 
 enum class Dynamic(val midiVolume: Int) {
-    PPP(3), PP(10), P(20), MP(30), MF(55), F(80), FF(104), FFF(127);
+    PPP(5), PP(10), P(20), MP(30), MF(55), F(80), FF(104), FFF(127);
 
     override fun toString(): String = name.lowercase()
 }
@@ -277,20 +339,21 @@ sealed interface PitchedElement : Element {
 }
 
 sealed class AbstractElement : Element {
-    override val start: Property<Time> = SimpleObjectProperty(0)
-    override val startDynamic: Property<Dynamic> = SimpleObjectProperty(Dynamic.MF)
-    override val instrument: Property<Instrument?> = SimpleObjectProperty(null)
+    override val start: Property<Time> = SimpleObjectProperty(this, "start", 0)
+    override val startDynamic: Property<Dynamic> = SimpleObjectProperty(this, "startDynamic", Dynamic.MF)
+    override val instrument: Property<Instrument?> = SimpleObjectProperty(this, "instrument", null)
     override val customY: DoubleProperty? get() = null
 
     override fun toString(): String = "$type: $start ($startDynamic)"
 }
 
-data class PropertySerializer<T : Any>(private val valueSerializer: KSerializer<T>) : KSerializer<Property<T>> {
+data class PropertySerializer<T>(private val valueSerializer: KSerializer<T>) : KSerializer<Property<T>> {
     override val descriptor: SerialDescriptor
         get() = valueSerializer.descriptor
 
     override fun serialize(encoder: Encoder, value: Property<T>) {
-        encoder.encodeSerializableValue(valueSerializer, value.value)
+        val v = value.value
+        encoder.encodeSerializableValue(valueSerializer, v)
     }
 
     override fun deserialize(decoder: Decoder): Property<T> {
@@ -303,7 +366,7 @@ data class PropertySerializer<T : Any>(private val valueSerializer: KSerializer<
 @Serializable
 class ElementPhase(
     @Serializable(with = PropertySerializer::class) val end: Property<Time>,
-    @Serializable(with = PropertySerializer::class) val targetPitch: Property<Pitch>,
+    @Serializable(with = PropertySerializer::class) val targetPitch: Property<Pitch?>,
     @Serializable(with = PropertySerializer::class) val targetDynamic: Property<Dynamic>
 )
 
@@ -320,7 +383,7 @@ sealed interface ContinuousElement : Element {
 }
 
 sealed class AbstractContinuousElement : ContinuousElement, AbstractElement() {
-    final override val phases: Property<List<ElementPhase>> = SimpleObjectProperty(emptyList())
+    final override val phases: Property<List<ElementPhase>> = SimpleObjectProperty(this, "phases", emptyList())
 
     override val end: ObservableValue<out Time> =
         phases.flatMap { phases -> phases.lastOrNull()?.end ?: SimpleObjectProperty(0) }
@@ -332,7 +395,8 @@ sealed class AbstractContinuousElement : ContinuousElement, AbstractElement() {
 
 sealed class PitchedContinuousElement : ContinuousElement, PitchedElement, AbstractContinuousElement() {
     abstract override val type: ObservableValue<out Type<PitchedContinuousElement>>
-    override val pitch: Property<Pitch> = SimpleObjectProperty(Pitch(0, PitchName.C, RegularAccidental.Natural))
+
+    override val pitch: Property<Pitch> = SimpleObjectProperty(this, "pitch", Pitch(0, PitchName.C, Natural))
 
     override fun properties(): List<Element.Prop> = super<AbstractContinuousElement>.properties() + ::pitch.p
 
@@ -375,7 +439,7 @@ class SimplePitchedContinuousElement(
 }
 
 class Trill : PitchedContinuousElement() {
-    val secondaryPitch: Property<Pitch> = SimpleObjectProperty(Pitch(0, PitchName.C, RegularAccidental.Natural))
+    val secondaryPitch: Property<Pitch> = SimpleObjectProperty(Pitch(0, PitchName.C, Natural))
 
     override fun properties(): List<Element.Prop> = super.properties() + ::secondaryPitch.p
 
@@ -433,7 +497,7 @@ open class ContinuousNoise(override var type: Property<Type>) : ContinuousElemen
 
 class DiscretePitchedElement(override val type: Property<Type>) : AbstractElement(),
     PitchedElement {
-    override val pitch: Property<Pitch> = SimpleObjectProperty(Pitch(0, PitchName.C, RegularAccidental.Natural))
+    override val pitch: Property<Pitch> = SimpleObjectProperty(this, "pitch", Pitch(0, PitchName.C, Natural))
 
     override val end: ObservableValue<out Time> = start.map { t -> t + 1 }
 

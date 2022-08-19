@@ -25,7 +25,7 @@ class EventListBuilder(private val handle: MidiOutput.NoteHandle) {
 fun MidiOutput.eventList(block: EventListBuilder.() -> Unit): List<Event> =
     EventListBuilder(createNoteHandle()).apply(block).build()
 
-const val PULSES_PER_BEAT = 64
+const val PULSES_PER_BEAT = 44
 
 fun GraphicalScore.createEvents(output: MidiOutput): List<Event> =
     elements.flatMap { element ->
